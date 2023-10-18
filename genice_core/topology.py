@@ -1,6 +1,6 @@
 """
 Arrange edges appropriately.
-"""    
+"""
 
 from logging import getLogger
 from typing import Union
@@ -11,6 +11,7 @@ from genice_core.dipole import minimize_net_dipole
 
 # Generate documents for these functions only.
 __all__ = []
+
 
 def chain(g, seq):
     while True:
@@ -52,7 +53,7 @@ def find_path(g):
     return c0
 
 
-def noodlize(g: nx.Graph)->nx.Graph:
+def noodlize(g: nx.Graph) -> nx.Graph:
     """Divide each vertex of the graph and make a set of paths.
 
     A new algorithm suggested by Prof. Sakuma, Yamagata University.
@@ -122,12 +123,12 @@ def decompose_complex_path(path):
 
 
 def make_digraph(
-    g:nx.Graph, 
-    divg:nx.Graph, 
-    pos:Union[np.array, None]=None, 
-    pbc=False, 
-    dipoleOptimizationCycles:int=0
-)->nx.DiGraph:
+    g: nx.Graph,
+    divg: nx.Graph,
+    pos: Union[np.array, None] = None,
+    pbc=False,
+    dipoleOptimizationCycles: int = 0,
+) -> nx.DiGraph:
     """
     Set the orientations to the components.
 
@@ -155,7 +156,9 @@ def make_digraph(
 
     # arrange the orientations here if you want to balance the polarization
     if dipoleOptimizationCycles > 0:
-        paths = minimize_net_dipole(paths, pos, pbc=pbc, maxiter=dipoleOptimizationCycles)
+        paths = minimize_net_dipole(
+            paths, pos, pbc=pbc, maxiter=dipoleOptimizationCycles
+        )
 
     # target
     dg = nx.DiGraph(g)

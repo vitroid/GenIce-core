@@ -4,14 +4,13 @@
 
 Core algorithms of GenIce2
 
-version 0.4
+version 0.4.1
 
 
 ## Requirements
 
 * numpy
 * networkx
-* scikit-learn
 
 
 

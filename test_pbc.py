@@ -13,9 +13,7 @@ basicConfig(level=DEBUG)
 
 lattice = Lattice("1h")
 formatter = Format("raw", stage=(1, 2))
-raw = GenIce(lattice, signature="Ice Ih", rep=(3, 3, 3)).generate_ice(
-    formatter
-)
+raw = GenIce(lattice, signature="Ice Ih", rep=(3, 3, 3)).generate_ice(formatter)
 
 # graph is the topology of the hydrogen-bond network
 g = nx.Graph(raw["graph"])
@@ -26,10 +24,5 @@ cell = raw["repcell"]
 
 # set orientations of the hydrogen bonds.
 dg = ice_graph(
-    g, 
-    vertexPositions=layout, 
-    isPeriodicBoundary=True, 
-    dipoleOptimizationCycles=100
+    g, vertexPositions=layout, isPeriodicBoundary=True, dipoleOptimizationCycles=100
 )
-
-

@@ -6,7 +6,9 @@ from logging import getLogger
 import numpy as np
 
 
-def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:bool=False)->list[list]:
+def minimize_net_dipole(
+    paths: list[list], pos: np.array, maxiter: int = 2000, pbc: bool = False
+) -> list[list]:
     """Minimize the net polarization by flipping several paths.
 
     Args:
@@ -31,7 +33,7 @@ def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:b
             displace -= np.floor(displace + 0.5)
             # total dipole along the chain (or a cycle)
             chain_pol = np.sum(displace, axis=0)
-            # if it is large enough,
+            # if it is large enough, i.e. if it is a spanning cycle,
             if chain_pol @ chain_pol > 1e-6:
                 logger.debug(path)
                 dipoles.append(chain_pol)
