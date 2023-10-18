@@ -6,6 +6,11 @@ all: README.md
 build: $(SOURCES)
 	python3 -m build
 
+# https://qiita.com/yukinarit/items/0996180032c077443efb
+# https://zenn.dev/atu4403/articles/python-githubpages
+doc:
+	pdoc3 --html -o docs --force genice_core
+
 
 # pep8:
 # 	autopep8 -r -a -a -i clustice/

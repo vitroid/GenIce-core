@@ -6,9 +6,7 @@ import networkx as nx
 from genice2.genice import GenIce
 from genice2.plugin import Format, Lattice
 
-from genice_core.gromacs import render
 from genice_core.topology import ice_graph
-from genice_core.water import tip4p
 
 logger = getLogger()
 basicConfig(level=DEBUG)
@@ -27,23 +25,11 @@ layout = raw["reppositions"]
 cell = raw["repcell"]
 
 # set orientations of the hydrogen bonds.
-dg = ice_graph(g, pos=layout, pbc=True)
-
-# put water molecules
-gro = render(
-    dg,
-    layout @ cell,
-    watermodel=tip4p,
-    cell=f"{cell[0,0]} {cell[1,1]} {cell[2,2]}",
-    pbc=True,
+dg = ice_graph(
+    g, 
+    vertexPositions=layout, 
+    isPeriodicBoundary=True, 
+    dipoleOptimizationCycles=100
 )
-with open(f"save.gro", "w") as f:
-    f.write(gro)
 
-# # show
-# view = py3Dmol.view()
-# view.addModel(gro, "gro")
-# view.setStyle({"stick": {}})
-# view.addUnitCell()
-# view.zoomTo()
-# view.show()
+

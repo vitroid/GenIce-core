@@ -1,22 +1,19 @@
-from logging import getLogger
+"""
+Arrange edges appropriately.
+"""    
 
+from logging import getLogger
+from typing import Union
 import networkx as nx
 import numpy as np
 
 from genice_core.dipole import minimize_net_dipole
 
 
-def obey_ice_rules(g):
-    """
-    Test if the directed graph g obeys the ice rules.
-    """
-    for v in g:
-        id = g.in_degree(v)
-        od = g.out_degree(v)
-        if not (id in (1, 2) and od in (1, 2)):
-            return False
-    return True
-
+# Generate documents for these functions only.
+__all__ = [
+    'ice_graph'
+]
 
 def chain(g, seq):
     while True:
@@ -58,11 +55,16 @@ def find_path(g):
     return c0
 
 
-def noodlize(g):
-    """
-    Divide each node of the graph and make them a set of paths.
+def noodlize(g: nx.Graph)->nx.Graph:
+    """Divide each vertex of the graph and make a set of paths.
 
     A new algorithm suggested by Prof. Sakuma, Yamagata University.
+
+    Args:
+        g (nx.Graph): An ice-like undirected graph. All vertices must not be >4-degree.
+
+    Returns:
+        nx.Graph: A graph mode of chains and cycles.
     """
 
     nnode = len(g)
@@ -72,7 +74,7 @@ def noodlize(g):
     divg = nx.Graph(g)
 
     for v in g:
-        nei = [x for x in divg.neighbors(v)]
+        nei = list(divg.neighbors(v))
         assert len(nei) <= 4, "degree must be <=4"
         # fill by Nones if number of neighbors is less than 4
         nei = (nei + [None, None, None, None])[:4]
@@ -122,13 +124,20 @@ def decompose_complex_path(path):
     logger.debug(f"Done decomposition.")
 
 
-def make_digraph(g, divg, pos=None, pbc=False):
+def make_digraph(
+    g:nx.Graph, 
+    divg:nx.Graph, 
+    pos:Union[np.array, None]=None, 
+    pbc=False, 
+    dipoleOptimizationCycles:int=0
+)->nx.DiGraph:
     """
     Set the orientations to the components.
 
-    divg: the divided graph made of chains and cycles.
+    divg: the divided graph made from g.
           divg is an undirected graph.
     pos: positions of the nodes. If given, the net dipole is minimized.
+    dipoleOptimizationCycles: Number of iterations to reduce the net dipole moment.
     """
     nnode = len(g)
 
@@ -148,8 +157,8 @@ def make_digraph(g, divg, pos=None, pbc=False):
         paths += list(decompose_complex_path(path))
 
     # arrange the orientations here if you want to balance the polarization
-    if pos is not None:
-        paths = minimize_net_dipole(paths, pos, pbc=pbc)
+    if dipoleOptimizationCycles > 0:
+        paths = minimize_net_dipole(paths, pos, pbc=pbc, maxiter=dipoleOptimizationCycles)
 
     # target
     dg = nx.DiGraph(g)
@@ -161,13 +170,30 @@ def make_digraph(g, divg, pos=None, pbc=False):
     return dg
 
 
-def ice_graph(g, pos=None, pbc=False):
-    """
-    Make a digraph that obeys the ice rules.
+def ice_graph(
+    g:nx.Graph, 
+    vertexPositions:Union[np.array, None]=None, 
+    isPeriodicBoundary:bool=False,
+    dipoleOptimizationCycles:int=0,
+)->nx.DiGraph:
+    """Make a digraph that obeys the ice rules.
 
     A new algorithm suggested by Prof. Sakuma, Yamagata University.
-    """
 
+    Args:
+        g (nx.Graph): A ice-like undirected graph.
+        vertexPositions (Union[nx.array, None], optional): Positions of the vertices. Defaults to None.
+        isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
+        dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Default is 0 (no iteration).
+    Returns:
+        nx.DiGraph: An ice graph.
+    """
     divg = noodlize(g)
-    dg = make_digraph(g, divg, pos=pos, pbc=pbc)
+    dg = make_digraph(
+        g, 
+        divg, 
+        pos=vertexPositions, 
+        pbc=isPeriodicBoundary, 
+        dipoleOptimizationCycles=dipoleOptimizationCycles
+    )
     return dg

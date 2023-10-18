@@ -13,6 +13,7 @@ build = "*"
 jinja2 = "*"
 toml = "*"
 genice2 = "*"
+pdoc3 = "*"
 
 [requires]
 python_version = "3.11"

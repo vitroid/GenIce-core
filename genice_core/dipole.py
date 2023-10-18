@@ -1,17 +1,19 @@
-import itertools as it
+"""
+Optimizes the orientations of directed paths to reduce the net dipole moment.
+"""
 from logging import getLogger
 
 import numpy as np
 
 
-def minimize_net_dipole(paths, pos, maxiter=2000, pbc=False):
-    """Minimize the net polarization by flipping paths.
+def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:bool=False)->list[list]:
+    """Minimize the net polarization by flipping several paths.
 
     Args:
-        paths (_type_): List of directed paths
-        pos (_type_): Positions of the nodes
+        paths (list of list): List of directed paths. A path is a list of integer. A path with identical labels at first and last items are considered to be cyclic.
+        pos (2d numpy array): Positions of the nodes.
         maxiter (int, optional): Number of random orientations for the paths. Defaults to 1000.
-        cell: Periodic cell; it it is given, the positions of the nodes must be in the fractional coordinate system.
+        pbc (bool, optional): If `True`, the positions of the nodes must be in the fractional coordinate system.
     Returns:
         list of paths: Optimized paths.
     """
@@ -55,6 +57,7 @@ def minimize_net_dipole(paths, pos, maxiter=2000, pbc=False):
             parity_optimal = parity
             logger.info(f"{loop} {np.linalg.norm(pol_optimal)} dipole")
             if pol_optimal @ pol_optimal < 1e-10:
+                logger.debug("Optimized.")
                 break
 
     for i, dir in zip(polarized, parity_optimal):
