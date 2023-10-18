@@ -9,11 +9,8 @@ import numpy as np
 
 from genice_core.dipole import minimize_net_dipole
 
-
 # Generate documents for these functions only.
-__all__ = [
-    'ice_graph'
-]
+__all__ = []
 
 def chain(g, seq):
     while True:
@@ -167,33 +164,4 @@ def make_digraph(
         for i, j in zip(path, path[1:]):
             dg.remove_edge(i, j)
 
-    return dg
-
-
-def ice_graph(
-    g:nx.Graph, 
-    vertexPositions:Union[np.array, None]=None, 
-    isPeriodicBoundary:bool=False,
-    dipoleOptimizationCycles:int=0,
-)->nx.DiGraph:
-    """Make a digraph that obeys the ice rules.
-
-    A new algorithm suggested by Prof. Sakuma, Yamagata University.
-
-    Args:
-        g (nx.Graph): A ice-like undirected graph.
-        vertexPositions (Union[nx.array, None], optional): Positions of the vertices. Defaults to None.
-        isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
-        dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Default is 0 (no iteration).
-    Returns:
-        nx.DiGraph: An ice graph.
-    """
-    divg = noodlize(g)
-    dg = make_digraph(
-        g, 
-        divg, 
-        pos=vertexPositions, 
-        pbc=isPeriodicBoundary, 
-        dipoleOptimizationCycles=dipoleOptimizationCycles
-    )
     return dg

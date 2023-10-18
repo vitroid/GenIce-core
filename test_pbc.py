@@ -6,7 +6,7 @@ import networkx as nx
 from genice2.genice import GenIce
 from genice2.plugin import Format, Lattice
 
-from genice_core.topology import ice_graph
+from genice_core import ice_graph
 
 logger = getLogger()
 basicConfig(level=DEBUG)

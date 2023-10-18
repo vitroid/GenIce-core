@@ -38,11 +38,8 @@ import numpy as np
 
 from genice_core.dipole import minimize_net_dipole
 
-
 # Generate documents for these functions only.
-__all__ = [
-    &#39;ice_graph&#39;
-]
+__all__ = []
 
 def chain(g, seq):
     while True:
@@ -196,35 +193,6 @@ def make_digraph(
         for i, j in zip(path, path[1:]):
             dg.remove_edge(i, j)
 
-    return dg
-
-
-def ice_graph(
-    g:nx.Graph, 
-    vertexPositions:Union[np.array, None]=None, 
-    isPeriodicBoundary:bool=False,
-    dipoleOptimizationCycles:int=0,
-)-&gt;nx.DiGraph:
-    &#34;&#34;&#34;Make a digraph that obeys the ice rules.
-
-    A new algorithm suggested by Prof. Sakuma, Yamagata University.
-
-    Args:
-        g (nx.Graph): A ice-like undirected graph.
-        vertexPositions (Union[nx.array, None], optional): Positions of the vertices. Defaults to None.
-        isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
-        dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Default is 0 (no iteration).
-    Returns:
-        nx.DiGraph: An ice graph.
-    &#34;&#34;&#34;
-    divg = noodlize(g)
-    dg = make_digraph(
-        g, 
-        divg, 
-        pos=vertexPositions, 
-        pbc=isPeriodicBoundary, 
-        dipoleOptimizationCycles=dipoleOptimizationCycles
-    )
     return dg</code></pre>
 </details>
 </section>
@@ -233,64 +201,6 @@ def ice_graph(
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="genice_core.topology.ice_graph"><code class="name flex">
-<span>def <span class="ident">ice_graph</span></span>(<span>g: networkx.classes.graph.Graph, vertexPositions: Optional[<built-in function array>] = None, isPeriodicBoundary: bool = False, dipoleOptimizationCycles: int = 0) ‑> networkx.classes.digraph.DiGraph</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Make a digraph that obeys the ice rules.</p>
-<p>A new algorithm suggested by Prof. Sakuma, Yamagata University.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>g</code></strong> :&ensp;<code>nx.Graph</code></dt>
-<dd>A ice-like undirected graph.</dd>
-<dt><strong><code>vertexPositions</code></strong> :&ensp;<code>Union[nx.array, None]</code>, optional</dt>
-<dd>Positions of the vertices. Defaults to None.</dd>
-<dt><strong><code>isPeriodicBoundary</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>If True, the positions are considered to be in the fractional coordinate system. Defaults to False.</dd>
-<dt><strong><code>dipoleOptimizationCycles</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Number of iterations to reduce the net dipole moment. Default is 0 (no iteration).</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>nx.DiGraph</code></dt>
-<dd>An ice graph.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def ice_graph(
-    g:nx.Graph, 
-    vertexPositions:Union[np.array, None]=None, 
-    isPeriodicBoundary:bool=False,
-    dipoleOptimizationCycles:int=0,
-)-&gt;nx.DiGraph:
-    &#34;&#34;&#34;Make a digraph that obeys the ice rules.
-
-    A new algorithm suggested by Prof. Sakuma, Yamagata University.
-
-    Args:
-        g (nx.Graph): A ice-like undirected graph.
-        vertexPositions (Union[nx.array, None], optional): Positions of the vertices. Defaults to None.
-        isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
-        dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Default is 0 (no iteration).
-    Returns:
-        nx.DiGraph: An ice graph.
-    &#34;&#34;&#34;
-    divg = noodlize(g)
-    dg = make_digraph(
-        g, 
-        divg, 
-        pos=vertexPositions, 
-        pbc=isPeriodicBoundary, 
-        dipoleOptimizationCycles=dipoleOptimizationCycles
-    )
-    return dg</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 </section>
@@ -304,11 +214,6 @@ def ice_graph(
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="genice_core" href="index.html">genice_core</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="genice_core.topology.ice_graph" href="#genice_core.topology.ice_graph">ice_graph</a></code></li>
 </ul>
 </li>
 </ul>
