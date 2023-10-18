@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "genice-core"
+version = "0.1" # major.minor.fix
+authors = [
+  { name="Masakazu Matsumoto", email="vitroid@gmail.com" },
+]
+description = "Core algorithms of GenIce2"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["numpy", "networkx"]
+
+[project.urls]
+"Homepage" = "https://github.com/vitroid/GenIce-core"
+"Bug Tracker" = "https://github.com/vitroid/GenIce-core/issues"
+
+[genice]
+"logo" = "https://raw.githubusercontent.com/vitroid/GenIce/develop/logo/genice-v0.png"
+"url" = "https://github.com/vitroid/GenIce2"
