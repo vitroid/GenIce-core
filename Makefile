@@ -3,7 +3,7 @@ SOURCES=$(wildcard genice_core/*.py)
 all: README.md
 	echo Hello.
 
-build: $(SOURCES)
+build: $(SOURCES) README.md
 	python3 -m build
 
 # https://qiita.com/yukinarit/items/0996180032c077443efb
