@@ -12,6 +12,7 @@ scikit-learn = "*"
 build = "*"
 jinja2 = "*"
 toml = "*"
+genice2 = "*"
 
 [requires]
 python_version = "3.11"
