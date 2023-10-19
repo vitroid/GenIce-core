@@ -31,22 +31,30 @@
 Optimizes the orientations of directed paths to reduce the net dipole moment.
 &#34;&#34;&#34;
 from logging import getLogger
+from typing import Union
 
 import numpy as np
 
 
-def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:bool=False)-&gt;list[list]:
+def minimize_net_dipole(
+    paths: list[list], pos: np.ndarray, maxiter: int = 2000, pbc: bool = False
+) -&gt; list[list]:
     &#34;&#34;&#34;Minimize the net polarization by flipping several paths.
+
+    It is assumed that every vector has an identical dipole moment.
 
     Args:
         paths (list of list): List of directed paths. A path is a list of integer. A path with identical labels at first and last items are considered to be cyclic.
-        pos (2d numpy array): Positions of the nodes.
+        pos (nx.ndarray[*,3]): Positions of the nodes.
         maxiter (int, optional): Number of random orientations for the paths. Defaults to 1000.
         pbc (bool, optional): If `True`, the positions of the nodes must be in the fractional coordinate system.
     Returns:
         list of paths: Optimized paths.
     &#34;&#34;&#34;
     logger = getLogger()
+
+    if maxiter &lt; 1:
+        return paths
 
     # polarized chains and cycles. Small cycle of dipoles are eliminated.
     polarized = []
@@ -60,7 +68,7 @@ def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:b
             displace -= np.floor(displace + 0.5)
             # total dipole along the chain (or a cycle)
             chain_pol = np.sum(displace, axis=0)
-            # if it is large enough,
+            # if it is large enough, i.e. if it is a spanning cycle,
             if chain_pol @ chain_pol &gt; 1e-6:
                 logger.debug(path)
                 dipoles.append(chain_pol)
@@ -121,16 +129,16 @@ def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:b
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="genice_core.dipole.minimize_net_dipole"><code class="name flex">
-<span>def <span class="ident">minimize_net_dipole</span></span>(<span>paths: list[list], pos: <built-in function array>, maxiter: int = 2000, pbc: bool = False) ‑> list[list]</span>
+<span>def <span class="ident">minimize_net_dipole</span></span>(<span>paths: list[list], pos: numpy.ndarray, maxiter: int = 2000, pbc: bool = False) ‑> list[list]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Minimize the net polarization by flipping several paths.</p>
+<p>It is assumed that every vector has an identical dipole moment.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>paths</code></strong> :&ensp;<code>list</code> of <code>list</code></dt>
 <dd>List of directed paths. A path is a list of integer. A path with identical labels at first and last items are considered to be cyclic.</dd>
-<dt><strong><code>pos</code></strong> :&ensp;<code>2d numpy array</code></dt>
-<dd>Positions of the nodes.</dd>
+<dt>pos (nx.ndarray[*,3]): Positions of the nodes.</dt>
 <dt><strong><code>maxiter</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>Number of random orientations for the paths. Defaults to 1000.</dd>
 <dt><strong><code>pbc</code></strong> :&ensp;<code>bool</code>, optional</dt>
@@ -145,18 +153,25 @@ def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:b
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:bool=False)-&gt;list[list]:
+<pre><code class="python">def minimize_net_dipole(
+    paths: list[list], pos: np.ndarray, maxiter: int = 2000, pbc: bool = False
+) -&gt; list[list]:
     &#34;&#34;&#34;Minimize the net polarization by flipping several paths.
+
+    It is assumed that every vector has an identical dipole moment.
 
     Args:
         paths (list of list): List of directed paths. A path is a list of integer. A path with identical labels at first and last items are considered to be cyclic.
-        pos (2d numpy array): Positions of the nodes.
+        pos (nx.ndarray[*,3]): Positions of the nodes.
         maxiter (int, optional): Number of random orientations for the paths. Defaults to 1000.
         pbc (bool, optional): If `True`, the positions of the nodes must be in the fractional coordinate system.
     Returns:
         list of paths: Optimized paths.
     &#34;&#34;&#34;
     logger = getLogger()
+
+    if maxiter &lt; 1:
+        return paths
 
     # polarized chains and cycles. Small cycle of dipoles are eliminated.
     polarized = []
@@ -170,7 +185,7 @@ def minimize_net_dipole(paths: list[list], pos:np.array, maxiter:int=2000, pbc:b
             displace -= np.floor(displace + 0.5)
             # total dipole along the chain (or a cycle)
             chain_pol = np.sum(displace, axis=0)
-            # if it is large enough,
+            # if it is large enough, i.e. if it is a spanning cycle,
             if chain_pol @ chain_pol &gt; 1e-6:
                 logger.debug(path)
                 dipoles.append(chain_pol)

@@ -16,7 +16,7 @@ def minimize_net_dipole(
 
     Args:
         paths (list of list): List of directed paths. A path is a list of integer. A path with identical labels at first and last items are considered to be cyclic.
-        pos (2d numpy array): Positions of the nodes.
+        pos (nx.ndarray[*,3]): Positions of the nodes.
         maxiter (int, optional): Number of random orientations for the paths. Defaults to 1000.
         pbc (bool, optional): If `True`, the positions of the nodes must be in the fractional coordinate system.
     Returns:

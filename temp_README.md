@@ -30,7 +30,23 @@ API manual is [here]({{genice.manual}}).
 
 ## Examples
 
+Make an ice graph from a given undirected graph.
 
+```python
+import networkx as nx
+import matplotlib
+import genice_core
+
+# np.random.seed(12345)
+
+g = nx.dodecahedral_graph()  # dodecahedral 20mer
+pos = nx.spring_layout(g)
+
+# set orientations of the hydrogen bonds.
+dg = genice_core.ice_graph(g)
+
+nx.draw_networkx(dg, pos)
+```
 
 
 ## Algorithms and how to cite them.

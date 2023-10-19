@@ -25,7 +25,7 @@
 <p><img alt="Logo" src="https://raw.githubusercontent.com/vitroid/GenIce/develop/logo/genice-v0.png"></p>
 <h1 id="genice-core">GenIce-core</h1>
 <p>Core algorithms of GenIce2</p>
-<p>version 0.4.1</p>
+<p>version 0.4.3</p>
 <h2 id="requirements">Requirements</h2>
 <ul>
 <li>numpy</li>
@@ -39,7 +39,24 @@ Install with pip3.</p>
 <h2 id="uninstallation">Uninstallation</h2>
 <pre><code>pip3 uninstall genice-core
 </code></pre>
+<h2 id="api">API</h2>
+<p>API manual is <a href="https://vitroid.github.io/GenIce-core/genice_core">here</a>.</p>
 <h2 id="examples">Examples</h2>
+<p>Make an ice graph from a given undirected graph.</p>
+<pre><code class="language-python">import networkx as nx
+import matplotlib
+import genice_core
+
+# np.random.seed(12345)
+
+g = nx.dodecahedral_graph()  # dodecahedral 20mer
+pos = nx.spring_layout(g)
+
+# set orientations of the hydrogen bonds.
+dg = genice_core.ice_graph(g)
+
+nx.draw_networkx(dg, pos)
+</code></pre>
 <h2 id="algorithms-and-how-to-cite-them">Algorithms and how to cite them.</h2>
 <p>The algorithms to make a depolarized hydrogen-disordered ice are explained in these papers:</p>
 <p>M. Matsumoto, T. Yagasaki, and H. Tanaka,"GenIce: Hydrogen-Disordered
@@ -84,18 +101,18 @@ from typing import Union
 
 
 def ice_graph(
-    g:nx.Graph, 
-    vertexPositions:Union[np.array, None]=None, 
-    isPeriodicBoundary:bool=False,
-    dipoleOptimizationCycles:int=0,
-)-&gt;nx.DiGraph:
+    g: nx.Graph,
+    vertexPositions: Union[np.ndarray, None] = None,
+    isPeriodicBoundary: bool = False,
+    dipoleOptimizationCycles: int = 0,
+) -&gt; nx.DiGraph:
     &#34;&#34;&#34;Make a digraph that obeys the ice rules.
 
     A new algorithm suggested by Prof. Sakuma, Yamagata University.
 
     Args:
         g (nx.Graph): A ice-like undirected graph.
-        vertexPositions (Union[nx.array, None], optional): Positions of the vertices. Defaults to None.
+        vertexPositions (Union[nx.ndarray, None], optional): Positions of the vertices. Defaults to None.
         isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
         dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Default is 0 (no iteration).
     Returns:
@@ -103,11 +120,11 @@ def ice_graph(
     &#34;&#34;&#34;
     divg = noodlize(g)
     dg = make_digraph(
-        g, 
-        divg, 
-        pos=vertexPositions, 
-        pbc=isPeriodicBoundary, 
-        dipoleOptimizationCycles=dipoleOptimizationCycles
+        g,
+        divg,
+        pos=vertexPositions,
+        pbc=isPeriodicBoundary,
+        dipoleOptimizationCycles=dipoleOptimizationCycles,
     )
     return dg</code></pre>
 </details>
@@ -131,7 +148,7 @@ def ice_graph(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="genice_core.ice_graph"><code class="name flex">
-<span>def <span class="ident">ice_graph</span></span>(<span>g: networkx.classes.graph.Graph, vertexPositions: Optional[<built-in function array>] = None, isPeriodicBoundary: bool = False, dipoleOptimizationCycles: int = 0) ‑> networkx.classes.digraph.DiGraph</span>
+<span>def <span class="ident">ice_graph</span></span>(<span>g: networkx.classes.graph.Graph, vertexPositions: Optional[numpy.ndarray] = None, isPeriodicBoundary: bool = False, dipoleOptimizationCycles: int = 0) ‑> networkx.classes.digraph.DiGraph</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Make a digraph that obeys the ice rules.</p>
@@ -140,7 +157,7 @@ def ice_graph(
 <dl>
 <dt><strong><code>g</code></strong> :&ensp;<code>nx.Graph</code></dt>
 <dd>A ice-like undirected graph.</dd>
-<dt><strong><code>vertexPositions</code></strong> :&ensp;<code>Union[nx.array, None]</code>, optional</dt>
+<dt><strong><code>vertexPositions</code></strong> :&ensp;<code>Union[nx.ndarray, None]</code>, optional</dt>
 <dd>Positions of the vertices. Defaults to None.</dd>
 <dt><strong><code>isPeriodicBoundary</code></strong> :&ensp;<code>bool</code>, optional</dt>
 <dd>If True, the positions are considered to be in the fractional coordinate system. Defaults to False.</dd>
@@ -157,18 +174,18 @@ def ice_graph(
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def ice_graph(
-    g:nx.Graph, 
-    vertexPositions:Union[np.array, None]=None, 
-    isPeriodicBoundary:bool=False,
-    dipoleOptimizationCycles:int=0,
-)-&gt;nx.DiGraph:
+    g: nx.Graph,
+    vertexPositions: Union[np.ndarray, None] = None,
+    isPeriodicBoundary: bool = False,
+    dipoleOptimizationCycles: int = 0,
+) -&gt; nx.DiGraph:
     &#34;&#34;&#34;Make a digraph that obeys the ice rules.
 
     A new algorithm suggested by Prof. Sakuma, Yamagata University.
 
     Args:
         g (nx.Graph): A ice-like undirected graph.
-        vertexPositions (Union[nx.array, None], optional): Positions of the vertices. Defaults to None.
+        vertexPositions (Union[nx.ndarray, None], optional): Positions of the vertices. Defaults to None.
         isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
         dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Default is 0 (no iteration).
     Returns:
@@ -176,11 +193,11 @@ def ice_graph(
     &#34;&#34;&#34;
     divg = noodlize(g)
     dg = make_digraph(
-        g, 
-        divg, 
-        pos=vertexPositions, 
-        pbc=isPeriodicBoundary, 
-        dipoleOptimizationCycles=dipoleOptimizationCycles
+        g,
+        divg,
+        pos=vertexPositions,
+        pbc=isPeriodicBoundary,
+        dipoleOptimizationCycles=dipoleOptimizationCycles,
     )
     return dg</code></pre>
 </details>
@@ -198,6 +215,7 @@ def ice_graph(
 <li><a href="#requirements">Requirements</a></li>
 <li><a href="#installation">Installation</a></li>
 <li><a href="#uninstallation">Uninstallation</a></li>
+<li><a href="#api">API</a></li>
 <li><a href="#examples">Examples</a></li>
 <li><a href="#algorithms-and-how-to-cite-them">Algorithms and how to cite them.</a></li>
 <li><a href="#how-to-contribute">How to contribute</a></li>
