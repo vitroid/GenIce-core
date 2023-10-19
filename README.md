@@ -4,7 +4,7 @@
 
 Core algorithms of GenIce2
 
-version 0.4.2
+version 0.4.3
 
 
 ## Requirements
@@ -27,7 +27,7 @@ Install with pip3.
 
 ## API
 
-API manual is [here]().
+API manual is [here](https://vitroid.github.io/GenIce-core/genice_core).
 
 ## Examples
 

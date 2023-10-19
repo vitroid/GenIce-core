@@ -26,7 +26,7 @@ Install with pip3.
 
 ## API
 
-API manual is [here]({{manual}}).
+API manual is [here]({{genice.manual}}).
 
 ## Examples
 

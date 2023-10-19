@@ -160,3 +160,6 @@ cython_debug/
 #.idea/
 Pipfile.lock
 save.gro
+Figure1.png
+Figure1 copy.png
+.vscode/settings.json
