@@ -2,14 +2,17 @@
 Optimizes the orientations of directed paths to reduce the net dipole moment.
 """
 from logging import getLogger
+from typing import Union
 
 import numpy as np
 
 
 def minimize_net_dipole(
-    paths: list[list], pos: np.array, maxiter: int = 2000, pbc: bool = False
+    paths: list[list], pos: np.ndarray, maxiter: int = 2000, pbc: bool = False
 ) -> list[list]:
     """Minimize the net polarization by flipping several paths.
+
+    It is assumed that every vector has an identical dipole moment.
 
     Args:
         paths (list of list): List of directed paths. A path is a list of integer. A path with identical labels at first and last items are considered to be cyclic.
@@ -20,6 +23,9 @@ def minimize_net_dipole(
         list of paths: Optimized paths.
     """
     logger = getLogger()
+
+    if maxiter < 1:
+        return paths
 
     # polarized chains and cycles. Small cycle of dipoles are eliminated.
     polarized = []

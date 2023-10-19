@@ -89,9 +89,14 @@ def noodlize(g: nx.Graph) -> nx.Graph:
     return divg
 
 
-def decompose_complex_path(path):
-    """
-    Divide a complex path to set of simple cycles and paths.
+def decompose_complex_path(path: list):
+    """A generator that divides a complex path with self-crossings to set of simple cycles and paths.
+
+    Args:
+        path (list): A complec path
+
+    Yields:
+        list: a short and simple path/cycle
     """
     logger = getLogger()
     if len(path) == 0:
@@ -125,7 +130,7 @@ def decompose_complex_path(path):
 def make_digraph(
     g: nx.Graph,
     divg: nx.Graph,
-    pos: Union[np.array, None] = None,
+    pos: Union[np.ndarray, None] = None,
     pbc=False,
     dipoleOptimizationCycles: int = 0,
 ) -> nx.DiGraph:
@@ -133,7 +138,7 @@ def make_digraph(
     Set the orientations to the components.
 
     divg: the divided graph made from g.
-          divg is an undirected graph.
+        divg is an undirected graph.
     pos: positions of the nodes. If given, the net dipole is minimized.
     dipoleOptimizationCycles: Number of iterations to reduce the net dipole moment.
     """
@@ -155,7 +160,7 @@ def make_digraph(
         paths += list(decompose_complex_path(path))
 
     # arrange the orientations here if you want to balance the polarization
-    if dipoleOptimizationCycles > 0:
+    if pos is not None:
         paths = minimize_net_dipole(
             paths, pos, pbc=pbc, maxiter=dipoleOptimizationCycles
         )

@@ -13,7 +13,7 @@ from typing import Union
 
 def ice_graph(
     g: nx.Graph,
-    vertexPositions: Union[np.array, None] = None,
+    vertexPositions: Union[np.ndarray, None] = None,
     isPeriodicBoundary: bool = False,
     dipoleOptimizationCycles: int = 0,
 ) -> nx.DiGraph:
