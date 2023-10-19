@@ -4,7 +4,7 @@
 
 Core algorithms of GenIce2
 
-version 0.4.1
+version 0.4.2
 
 
 ## Requirements
@@ -25,6 +25,9 @@ Install with pip3.
 
     pip3 uninstall genice-core
 
+## API
+
+API manual is [here]().
 
 ## Examples
 

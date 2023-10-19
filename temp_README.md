@@ -24,6 +24,9 @@ Install with pip3.
 
     pip3 uninstall genice-core
 
+## API
+
+API manual is [here]({{manual}}).
 
 ## Examples
 
