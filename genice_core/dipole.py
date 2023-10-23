@@ -63,7 +63,7 @@ def minimize_net_dipole(
         if net_pol @ net_pol < pol_optimal @ pol_optimal:
             pol_optimal = net_pol
             parity_optimal = parity
-            logger.info(f"{loop} {np.linalg.norm(pol_optimal)} dipole")
+            logger.info(f"{loop} {pol_optimal} dipole")
             if pol_optimal @ pol_optimal < 1e-10:
                 logger.debug("Optimized.")
                 break

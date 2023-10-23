@@ -142,6 +142,8 @@ def make_digraph(
     pos: positions of the nodes. If given, the net dipole is minimized.
     dipoleOptimizationCycles: Number of iterations to reduce the net dipole moment.
     """
+    logger = getLogger()
+
     nnode = len(g)
 
     paths = []
@@ -166,7 +168,7 @@ def make_digraph(
         )
 
     # target
-    dg = nx.DiGraph(g)
+    dg = g.to_directed()
 
     for path in paths:
         for i, j in zip(path, path[1:]):
