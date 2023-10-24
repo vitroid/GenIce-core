@@ -32,9 +32,9 @@ def net_polarization(
 
 def minimize_net_dipole(
     paths: list[list],
-    pos: np.ndarray,
+    vertexPositions: np.ndarray,
     maxiter: int = 2000,
-    pbc: bool = False,
+    isPeriodicBoundary: bool = False,
     targetPol: Union[np.ndarray, None] = None,
 ) -> list[list]:
     """Minimize the net polarization by flipping several paths.
@@ -56,16 +56,16 @@ def minimize_net_dipole(
         return paths
 
     if targetPol is None:
-        targetPol = np.zeros_like(pos[0])
+        targetPol = np.zeros_like(vertexPositions[0])
 
     # polarized chains and cycles. Small cycle of dipoles are eliminated.
     polarized = []
 
     dipoles = []
     for i, path in enumerate(paths):
-        if pbc:
+        if isPeriodicBoundary:
             # vectors between adjacent vertices.
-            displace = pos[path[1:]] - pos[path[:-1]]
+            displace = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
             # PBC wrap
             displace -= np.floor(displace + 0.5)
             # total dipole along the chain (or a cycle)
@@ -79,7 +79,7 @@ def minimize_net_dipole(
             # dipole moment of a path; NOTE: No PBC.
             if path[0] != path[-1]:
                 # If no PBC, a chain pol is simply an end-to-end pol.
-                chain_pol = pos[path[-1]] - pos[path[0]]
+                chain_pol = vertexPositions[path[-1]] - vertexPositions[path[0]]
                 dipoles.append(chain_pol)
                 polarized.append(i)
     dipoles = np.array(dipoles)
@@ -110,7 +110,7 @@ def minimize_net_dipole(
             # dipole moment of a path; NOTE: No PBC.
             if path[0] != path[-1]:
                 # If no PBC, a chain pol is simply an end-to-end pol.
-                chain_pol = pos[path[-1]] - pos[path[0]]
+                chain_pol = vertexPositions[path[-1]] - vertexPositions[path[0]]
                 dipoles.append(chain_pol)
         dipoles = np.array(dipoles)
 
