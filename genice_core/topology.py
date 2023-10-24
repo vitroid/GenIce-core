@@ -127,26 +127,16 @@ def decompose_complex_path(path: list):
     logger.debug(f"Done decomposition.")
 
 
-def make_digraph(
-    g: nx.Graph,
+def simple_paths(
+    nnode: int,
     divg: nx.Graph,
-    pos: Union[np.ndarray, None] = None,
-    pbc=False,
-    dipoleOptimizationCycles: int = 0,
-) -> nx.DiGraph:
+):
     """
     Set the orientations to the components.
 
-    divg: the divided graph made from g.
-        divg is an undirected graph.
-    pos: positions of the nodes. If given, the net dipole is minimized.
-    dipoleOptimizationCycles: Number of iterations to reduce the net dipole moment.
+    nnode (int): number of nodes in the original graph.
+    divg (nx.Graph): the divided graph.
     """
-    logger = getLogger()
-
-    nnode = len(g)
-
-    paths = []
     for c in nx.connected_components(divg):
         # a component of c is either a chain or a cycle.
         subg = divg.subgraph(c)
@@ -159,19 +149,4 @@ def make_digraph(
         # Flatten then path. It may make the path self-crossing.
         path = [v % nnode for v in path]
         # Divide a long path into simple paths and cycles.
-        paths += list(decompose_complex_path(path))
-
-    # arrange the orientations here if you want to balance the polarization
-    if pos is not None:
-        paths = minimize_net_dipole(
-            paths, pos, pbc=pbc, maxiter=dipoleOptimizationCycles
-        )
-
-    # target
-    dg = g.to_directed()
-
-    for path in paths:
-        for i, j in zip(path, path[1:]):
-            dg.remove_edge(i, j)
-
-    return dg
+        yield from decompose_complex_path(path)

@@ -1,10 +1,33 @@
 """
 Optimizes the orientations of directed paths to reduce the net dipole moment.
 """
-from logging import getLogger
+from logging import getLogger, DEBUG
 from typing import Union
 
 import numpy as np
+import networkx as nx
+
+
+def net_polarization(
+    dg: nx.DiGraph, vertexPositions: np.ndarray, isPeriodicBoundary: bool = False
+) -> np.ndarray:
+    """Net polarization (actually a vector sum) of a digraph
+
+    Args:
+        dg (nx.DiGraph): The digraph.
+        vertexPositions (np.ndarray): Positions of the vertices.
+        isPeriodicBoundary (bool, optional): If true, the vertex positions must be in fractional coordinate. Defaults to False.
+
+    Returns:
+        np.ndarray: net polarization
+    """
+    pol = np.zeros(3)
+    for i, j in dg.edges():
+        d = vertexPositions[j] - vertexPositions[i]
+        if isPeriodicBoundary:
+            d -= np.floor(d + 0.5)
+        pol += d
+    return pol
 
 
 def minimize_net_dipole(
@@ -12,7 +35,7 @@ def minimize_net_dipole(
     pos: np.ndarray,
     maxiter: int = 2000,
     pbc: bool = False,
-    targetPol: np.ndarray = np.zeros(3),
+    targetPol: Union[np.ndarray, None] = None,
 ) -> list[list]:
     """Minimize the net polarization by flipping several paths.
 
@@ -31,6 +54,9 @@ def minimize_net_dipole(
 
     if maxiter < 1:
         return paths
+
+    if targetPol is None:
+        targetPol = np.zeros_like(pos[0])
 
     # polarized chains and cycles. Small cycle of dipoles are eliminated.
     polarized = []
@@ -57,7 +83,7 @@ def minimize_net_dipole(
                 dipoles.append(chain_pol)
                 polarized.append(i)
     dipoles = np.array(dipoles)
-    # logger.debug(dipoles)
+    logger.debug(dipoles)
 
     pol_optimal = np.sum(dipoles, axis=0) - targetPol
     logger.info(f"init {np.linalg.norm(pol_optimal)} dipole")
@@ -77,10 +103,8 @@ def minimize_net_dipole(
         if dir < 0:
             paths[i] = paths[i][::-1]
 
-    VERIFY = False
-    if VERIFY:
+    if logger.isEnabledFor(DEBUG):
         # assert the chains are properly inversed.
-
         dipoles = []
         for i, path in enumerate(paths):
             # dipole moment of a path; NOTE: No PBC.
