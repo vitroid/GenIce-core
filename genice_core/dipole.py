@@ -8,7 +8,11 @@ import numpy as np
 
 
 def minimize_net_dipole(
-    paths: list[list], pos: np.ndarray, maxiter: int = 2000, pbc: bool = False
+    paths: list[list],
+    pos: np.ndarray,
+    maxiter: int = 2000,
+    pbc: bool = False,
+    targetPol: np.ndarray = np.zeros(3),
 ) -> list[list]:
     """Minimize the net polarization by flipping several paths.
 
@@ -19,6 +23,7 @@ def minimize_net_dipole(
         pos (nx.ndarray[*,3]): Positions of the nodes.
         maxiter (int, optional): Number of random orientations for the paths. Defaults to 1000.
         pbc (bool, optional): If `True`, the positions of the nodes must be in the fractional coordinate system.
+        target (np.ndarray, optional): Target value for the dipole-moment optimization.
     Returns:
         list of paths: Optimized paths.
     """
@@ -54,12 +59,12 @@ def minimize_net_dipole(
     dipoles = np.array(dipoles)
     # logger.debug(dipoles)
 
-    pol_optimal = np.sum(dipoles, axis=0)
+    pol_optimal = np.sum(dipoles, axis=0) - targetPol
     logger.info(f"init {np.linalg.norm(pol_optimal)} dipole")
     parity_optimal = np.ones(len(dipoles))
     for loop in range(maxiter):
         parity = np.random.randint(2, size=len(dipoles)) * 2 - 1
-        net_pol = parity @ dipoles
+        net_pol = parity @ dipoles - targetPol
         if net_pol @ net_pol < pol_optimal @ pol_optimal:
             pol_optimal = net_pol
             parity_optimal = parity
@@ -85,7 +90,7 @@ def minimize_net_dipole(
                 dipoles.append(chain_pol)
         dipoles = np.array(dipoles)
 
-        pol = np.sum(dipoles, axis=0)
+        pol = np.sum(dipoles, axis=0) - targetPol
         pol -= pol_optimal
         assert pol @ pol < 1e-20
 
