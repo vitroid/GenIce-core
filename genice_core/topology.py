@@ -3,11 +3,9 @@ Arrange edges appropriately.
 """
 
 from logging import getLogger
-from typing import Union
 import networkx as nx
 import numpy as np
 
-from genice_core.dipole import minimize_net_dipole
 
 # Generate documents for these functions only.
 __all__ = []
