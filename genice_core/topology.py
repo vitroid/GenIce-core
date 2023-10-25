@@ -13,24 +13,38 @@ from genice_core.dipole import minimize_net_dipole
 __all__ = []
 
 
-def chain(g, seq):
+def extend_path(g: nx.Graph, path: list) -> list:
+    """extend the path
+
+    Args:
+        g (nx.Graph): a linear or a simple cyclic graph.
+        path (list): A given path tho be extended
+
+    Returns:
+        list: the extended path or cycle
+    """
     while True:
-        last, head = seq[-2:]
+        last, head = path[-2:]
         for next in g.neighbors(head):
             if next != last:
                 break
         else:
             # no next node
-            return seq
-        seq.append(next)
-        if next == seq[0]:
+            return path
+        path.append(next)
+        if next == path[0]:
             # is cyclic
-            return seq
+            return path
 
 
-def find_path(g):
-    """
-    Find the path in g. g must be a linear or a simple cyclic graph.
+def find_path(g: nx.Graph) -> list:
+    """Find the path in g
+
+    Args:
+        g (nx.Graph): a linear or a simple cyclic graph.
+
+    Returns:
+        list: the path or cycle
     """
     nodes = list(g.nodes())
     head = nodes[0]
@@ -40,13 +54,13 @@ def find_path(g):
         return []
     elif len(nei) == 1:
         # an end node, fortunately.
-        return chain(g, [head, nei[0]])
-    c0 = chain(g, [head, nei[0]])
+        return extend_path(g, [head, nei[0]])
+    c0 = extend_path(g, [head, nei[0]])
 
     if c0[-1] != head:
         # linear chain graph
         # join the another side
-        c1 = chain(g, [head, nei[1]])
+        c1 = extend_path(g, [head, nei[1]])
         return list(reversed(c0)) + c1[1:]
 
     # cyclic graph
@@ -93,7 +107,7 @@ def decompose_complex_path(path: list):
     """A generator that divides a complex path with self-crossings to set of simple cycles and paths.
 
     Args:
-        path (list): A complec path
+        path (list): A complex path
 
     Yields:
         list: a short and simple path/cycle
