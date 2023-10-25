@@ -89,33 +89,24 @@ def minimize_net_dipole(
     logger.info(f"init {np.linalg.norm(pol_optimal)} dipole")
     parity_optimal = np.ones(len(dipoles))
     for loop in range(maxiter):
+        # random sequence of +1/-1
         parity = np.random.randint(2, size=len(dipoles)) * 2 - 1
+        # Set directions to chains by parity.
         net_pol = parity @ dipoles - targetPol
+        # If the new directions give better (smaller) net dipole moment,
         if net_pol @ net_pol < pol_optimal @ pol_optimal:
+            # that is the optimal
             pol_optimal = net_pol
             parity_optimal = parity
             logger.info(f"{loop} {pol_optimal} dipole")
+            # if well-converged,
             if pol_optimal @ pol_optimal < 1e-10:
                 logger.debug("Optimized.")
                 break
 
+    # invert some chains according to parity_optimal
     for i, dir in zip(polarized, parity_optimal):
         if dir < 0:
             paths[i] = paths[i][::-1]
-
-    if logger.isEnabledFor(DEBUG):
-        # assert the chains are properly inversed.
-        dipoles = []
-        for i, path in enumerate(paths):
-            # dipole moment of a path; NOTE: No PBC.
-            if path[0] != path[-1]:
-                # If no PBC, a chain pol is simply an end-to-end pol.
-                chain_pol = vertexPositions[path[-1]] - vertexPositions[path[0]]
-                dipoles.append(chain_pol)
-        dipoles = np.array(dipoles)
-
-        pol = np.sum(dipoles, axis=0) - targetPol
-        pol -= pol_optimal
-        assert pol @ pol < 1e-20
 
     return paths

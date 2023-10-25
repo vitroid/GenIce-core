@@ -32,34 +32,46 @@ Arrange edges appropriately.
 &#34;&#34;&#34;
 
 from logging import getLogger
-from typing import Union
 import networkx as nx
 import numpy as np
 
-from genice_core.dipole import minimize_net_dipole
 
 # Generate documents for these functions only.
 __all__ = []
 
 
-def chain(g, seq):
+def extend_path(g: nx.Graph, path: list) -&gt; list:
+    &#34;&#34;&#34;extend the path
+
+    Args:
+        g (nx.Graph): a linear or a simple cyclic graph.
+        path (list): A given path tho be extended
+
+    Returns:
+        list: the extended path or cycle
+    &#34;&#34;&#34;
     while True:
-        last, head = seq[-2:]
+        last, head = path[-2:]
         for next in g.neighbors(head):
             if next != last:
                 break
         else:
             # no next node
-            return seq
-        seq.append(next)
-        if next == seq[0]:
+            return path
+        path.append(next)
+        if next == path[0]:
             # is cyclic
-            return seq
+            return path
 
 
-def find_path(g):
-    &#34;&#34;&#34;
-    Find the path in g. g must be a linear or a simple cyclic graph.
+def find_path(g: nx.Graph) -&gt; list:
+    &#34;&#34;&#34;Find the path in g
+
+    Args:
+        g (nx.Graph): a linear or a simple cyclic graph.
+
+    Returns:
+        list: the path or cycle
     &#34;&#34;&#34;
     nodes = list(g.nodes())
     head = nodes[0]
@@ -69,17 +81,32 @@ def find_path(g):
         return []
     elif len(nei) == 1:
         # an end node, fortunately.
-        return chain(g, [head, nei[0]])
-    c0 = chain(g, [head, nei[0]])
+        return extend_path(g, [head, nei[0]])
+    c0 = extend_path(g, [head, nei[0]])
 
     if c0[-1] != head:
         # linear chain graph
         # join the another side
-        c1 = chain(g, [head, nei[1]])
+        c1 = extend_path(g, [head, nei[1]])
         return list(reversed(c0)) + c1[1:]
 
     # cyclic graph
     return c0
+
+
+def divide_node(divg: nx.Graph, vertex: int, offset: int):
+    nei = list(divg.neighbors(vertex))
+    assert len(nei) &lt;= 4, &#34;degree must be &lt;=4&#34;
+    # fill by Nones if number of neighbors is less than 4
+    nei = (nei + [None, None, None, None])[:4]
+    # two neighbor nodes that are passed away to the new node
+    migrants = set(np.random.choice(nei, 2, replace=False)) - set([None])
+    # new node label
+    newv = vertex + offset
+    # assemble edges
+    for migrant in migrants:
+        divg.remove_edge(migrant, vertex)
+        divg.add_edge(newv, migrant)
 
 
 def noodlize(g: nx.Graph) -&gt; nx.Graph:
@@ -94,25 +121,13 @@ def noodlize(g: nx.Graph) -&gt; nx.Graph:
         nx.Graph: A graph mode of chains and cycles.
     &#34;&#34;&#34;
 
-    nnode = len(g)
-    # 1. Split the nodes.
+    offset = len(g)
 
     # divided graph
     divg = nx.Graph(g)
 
     for v in g:
-        nei = list(divg.neighbors(v))
-        assert len(nei) &lt;= 4, &#34;degree must be &lt;=4&#34;
-        # fill by Nones if number of neighbors is less than 4
-        nei = (nei + [None, None, None, None])[:4]
-        # two neighbor nodes that are passed away to the new node
-        migrate = set(np.random.choice(nei, 2, replace=False)) - set([None])
-        # new node label
-        newv = v + nnode
-        # assemble edges
-        for x in migrate:
-            divg.remove_edge(x, v)
-            divg.add_edge(newv, x)
+        divide_node(divg, v, offset)
 
     # divg is made of chains and cycles.
     return divg
@@ -122,7 +137,7 @@ def decompose_complex_path(path: list):
     &#34;&#34;&#34;A generator that divides a complex path with self-crossings to set of simple cycles and paths.
 
     Args:
-        path (list): A complec path
+        path (list): A complex path
 
     Yields:
         list: a short and simple path/cycle

@@ -42,7 +42,7 @@ def ice_graph(
         paths = minimize_net_dipole(
             paths,
             vertexPositions,
-            pbc=isPeriodicBoundary,
+            isPeriodicBoundary=isPeriodicBoundary,
             maxiter=dipoleOptimizationCycles,
             targetPol=targetPol,
         )

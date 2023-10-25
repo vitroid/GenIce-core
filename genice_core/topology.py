@@ -65,6 +65,21 @@ def find_path(g: nx.Graph) -> list:
     return c0
 
 
+def divide_node(divg: nx.Graph, vertex: int, offset: int):
+    nei = list(divg.neighbors(vertex))
+    assert len(nei) <= 4, "degree must be <=4"
+    # fill by Nones if number of neighbors is less than 4
+    nei = (nei + [None, None, None, None])[:4]
+    # two neighbor nodes that are passed away to the new node
+    migrants = set(np.random.choice(nei, 2, replace=False)) - set([None])
+    # new node label
+    newv = vertex + offset
+    # assemble edges
+    for migrant in migrants:
+        divg.remove_edge(migrant, vertex)
+        divg.add_edge(newv, migrant)
+
+
 def noodlize(g: nx.Graph) -> nx.Graph:
     """Divide each vertex of the graph and make a set of paths.
 
@@ -77,25 +92,13 @@ def noodlize(g: nx.Graph) -> nx.Graph:
         nx.Graph: A graph mode of chains and cycles.
     """
 
-    nnode = len(g)
-    # 1. Split the nodes.
+    offset = len(g)
 
     # divided graph
     divg = nx.Graph(g)
 
     for v in g:
-        nei = list(divg.neighbors(v))
-        assert len(nei) <= 4, "degree must be <=4"
-        # fill by Nones if number of neighbors is less than 4
-        nei = (nei + [None, None, None, None])[:4]
-        # two neighbor nodes that are passed away to the new node
-        migrate = set(np.random.choice(nei, 2, replace=False)) - set([None])
-        # new node label
-        newv = v + nnode
-        # assemble edges
-        for x in migrate:
-            divg.remove_edge(x, v)
-            divg.add_edge(newv, x)
+        divide_node(divg, v, offset)
 
     # divg is made of chains and cycles.
     return divg
