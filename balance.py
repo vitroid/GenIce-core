@@ -7,21 +7,9 @@ import pairlist as pl
 import numpy as np
 import networkx as nx
 import yaplotlib as yap
-from collections import defaultdict
 import random
 from logging import getLogger, basicConfig, INFO, DEBUG
 import genice_core
-from genice_core.dipole import net_polarization
-
-
-def eineout_to_digraph(ein, eout):
-    dg = nx.DiGraph()
-    for i in eout:
-        for j in eout[i]:
-            assert i in ein[j]
-            if i >= 0 and j >= 0:
-                dg.add_edge(i, j)
-    return dg
 
 
 def draw(pos, g, dg):
@@ -69,10 +57,14 @@ def diamond(N: int) -> np.ndarray:
 
 
 logger = getLogger()
-basicConfig(level=DEBUG)
+basicConfig(
+    level=INFO,
+    style="{",
+    format="{levelname}:{filename}:{funcName}:{lineno}:{message}",
+)
 
 
-random.seed(0)
+# random.seed(0)
 
 # diamond graph
 N = 8
@@ -91,116 +83,57 @@ g = nx.Graph(
 )
 
 # 結合が4本に満たない場合は負数を入れておく。
-nodes = list(g)
-for i in nodes:
-    room = 4 - len(g[i])
-    for j in range(room):
-        g.add_edge(i, -j - 1)
+# 仮想的に、すべての水分子が4配位であるものとする。
+# (あとの処理が簡単にできるので)
+# でも表面積が大きいと時間がばかにならない。なしにできないかな。
+# できそうだね。
 
-# 固定矢印の配列
-ein = defaultdict(list)
-eout = defaultdict(list)
+genice_core.topology.decorate(g)
 
-logger.debug((pos[16], list(g[18])))
-logger.debug((pos[27], list(g[29])))
-# assert False
-# Dope ions
-perimeter = []
-NH4 = 18
+# 固定辺のグラフ。こちらも仮想隣接分子を置く。
+fixed = nx.DiGraph()
+
+NH4, F = random.sample(range(len(pos)), 2)
+
 neis = list(g[NH4])
 for nei in neis:
-    eout[NH4].append(nei)
-    ein[nei].append(NH4)
-    perimeter.append(nei)
-    g.remove_edge(NH4, nei)
+    fixed.add_edge(NH4, nei)
 
-F = 29
 neis = list(g[F])
 for nei in neis:
-    ein[F].append(nei)
-    eout[nei].append(F)
-    perimeter.append(nei)
-    g.remove_edge(F, nei)
+    fixed.add_edge(nei, F)
 
 
-# perimeterのノードは、さらに辺を固定する必要があるかもしれない。
-while len(perimeter) > 0:
-    draw(pos, g, eineout_to_digraph(ein, eout))
-    node = perimeter.pop(0)
-    nnei = len(g[node])
-    logger.info((node, g[node], ein[node], eout[node]))
-    assert len(g[node]) + len(ein[node]) + len(eout[node]) == 4
-    # 状況はこれで把握できた。いくつ固定すべきか、どうやって判定するのか?
-    # g上の結合数によらず、水分子は本来4本の水素結合を持っている。
-    # einが1本固定されたら、eoutも同じ数だけ固定されねばならない。
-    # ただし、その一本はdanglingかもしれない。
-    # danglingの場合には-1を指定する。
-    if len(ein[node]) == len(eout[node]):
-        continue
-    elif len(ein[node]) > len(eout[node]):
-        neis = list(g[node])
-        # logger.info(neis)
-        e = random.choice(neis)
-        eout[node].append(e)
-        ein[e].append(node)
-        g.remove_edge(node, e)
-        if e >= 0:
-            perimeter.append(e)
-    else:  # len(ein[node]) < len(eout[node]):
-        neis = list(g[node])
-        e = random.choice(neis)
-        ein[node].append(e)
-        eout[e].append(node)
-        g.remove_edge(node, e)
-        if e >= 0:
-            perimeter.append(e)
+genice_core.topology.balance(fixed, g, hook=lambda fixed: draw(pos, g, fixed))
 
 
-# これで残った無向グラフにgenice-coreして、ちゃんとice ruleが満足されることを示す。
-
-# Fix部分の双極子モーメント和。
-totalPol = np.zeros(3)
-for i in eout:
-    if i >= 0:
-        for j in eout[i]:
-            if j >= 0:
-                d = pos[j] - pos[i]
-                # PBC process here
-                totalPol += d
-logger.debug(f"{totalPol} net dipole before optimization")
-
-# ダミーノードを除去する
-try:
-    g.remove_node(-1)
-    g.remove_node(-2)
-    g.remove_node(-3)
-    g.remove_node(-4)
-except:
-    pass
+totalPol = genice_core.dipole.vector_sum(fixed, pos)
+logger.info(f"{totalPol}={np.linalg.norm(totalPol):.3f} net dipole before optimization")
 
 # 固定されなかった部分を作る。固定部分の分極をキャンセルするように。
 dg = genice_core.ice_graph(
-    g, vertexPositions=pos, targetPol=-totalPol, dipoleOptimizationCycles=100
+    g,
+    vertexPositions=pos,
+    dipoleOptimizationCycles=100,
+    fixed=fixed,
 )
 draw(pos, nx.Graph(), dg)
 
-
-for i in eout:
-    if i >= 0:
-        for j in eout[i]:
-            if j >= 0:
-                dg.add_edge(i, j)
+for i, j in fixed.edges:
+    assert i >= 0 and j >= 0, (i, j)
+    dg.add_edge(i, j)
 
 
-totalPol = net_polarization(dg, pos)
-logger.debug(f"{totalPol} net dipole after optimization")
+totalPol = genice_core.dipole.vector_sum(dg, pos)
+logger.info(f"{totalPol}={np.linalg.norm(totalPol):.3f} net dipole after optimization")
 
 
 draw(pos, nx.Graph(), dg)
 
 
-# できたっぽい。
-# いや、できてない。
-# 2fixで2本残ったgの頂点は「縦割り」してはいけないが、ただの2結合頂点は縦割りもOK。この違いをプログラムするのは難しいぞ。
-#
-#
+for node in dg:
+    if node not in (NH4, F):
+        assert dg.in_degree[node] <= 2, (dg.in_degree[node], dg.out_degree[node])
+        assert dg.out_degree[node] <= 2, (dg.in_degree[node], dg.out_degree[node])
+
+# これがうまくいったら、氷XVの部分秩序化に適用してみる。

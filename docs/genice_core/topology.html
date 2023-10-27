@@ -31,10 +31,11 @@
 Arrange edges appropriately.
 &#34;&#34;&#34;
 
-from logging import getLogger
+from logging import getLogger, DEBUG
 import networkx as nx
 import numpy as np
-
+from typing import Union
+import random
 
 # Generate documents for these functions only.
 __all__ = []
@@ -94,42 +95,82 @@ def find_path(g: nx.Graph) -&gt; list:
     return c0
 
 
-def divide_node(divg: nx.Graph, vertex: int, offset: int):
-    nei = list(divg.neighbors(vertex))
-    assert len(nei) &lt;= 4, &#34;degree must be &lt;=4&#34;
+def _divide(divg: nx.Graph, nei: list, vertex: int, offset: int):
     # fill by Nones if number of neighbors is less than 4
     nei = (nei + [None, None, None, None])[:4]
     # two neighbor nodes that are passed away to the new node
     migrants = set(np.random.choice(nei, 2, replace=False)) - set([None])
     # new node label
-    newv = vertex + offset
+    newVertex = vertex + offset
     # assemble edges
     for migrant in migrants:
         divg.remove_edge(migrant, vertex)
-        divg.add_edge(newv, migrant)
+        divg.add_edge(newVertex, migrant)
 
 
-def noodlize(g: nx.Graph) -&gt; nx.Graph:
+def divide_node(
+    divg: nx.Graph, vertex: int, offset: int, fixed: nx.DiGraph, numFixedEdges: int
+):
+    nei = list(divg.neighbors(vertex))
+    fullDegree = len(nei) + numFixedEdges
+    # minimal assertion
+    assert fullDegree &lt;= 4, f&#34;degree {fullDegree} &gt; 4&#34;
+
+    # 一部の辺が固定されている場合、分割は自由に行えない。この部分の処理が非常にこみいったことになる。
+    if numFixedEdges == 0:
+        _divide(divg, nei, vertex, offset)
+    elif numFixedEdges == 1:
+        # 自由結合が3本: 1本が固定されているので、一本が分割後に固定されることになる。
+        # 本来なら前処理でそのような状況をなくしておかれるべき。
+        assert len(nei) != 3
+
+        # 前処理のあとで自由結合が2本の場合、第4のダングリング結合が固定結合をキャンセルしているはずなので、分割不要。
+
+        # 自由結合が1の場合はそもそも分割不要。
+    elif numFixedEdges == 2:
+        # 2本の固定結合が1i1oの場合のみ、残る2本は自由に向きを決められる。
+        # 2i/2oの場合には、前処理で残る2本も固定されていなければならないので、ここにはこない。
+        pass
+        # 残りは割らなくていい。
+    elif numFixedEdges == 3:
+        # 残る1本は自動的に向きが定まるので前処理で排除されていなければならない。
+        # 可能なのは3結合で3本固定の場合のみ。
+        assert len(nei) == 0
+
+
+def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -&gt; nx.Graph:
     &#34;&#34;&#34;Divide each vertex of the graph and make a set of paths.
 
     A new algorithm suggested by Prof. Sakuma, Yamagata University.
 
     Args:
         g (nx.Graph): An ice-like undirected graph. All vertices must not be &gt;4-degree.
+        fixed (Union[nx.DiGraph,None], optional): Specifies the edges whose direction is fixed.. Defaults to None.
 
     Returns:
         nx.Graph: A graph mode of chains and cycles.
     &#34;&#34;&#34;
 
+    logger = getLogger()
+
+    fixg = nx.Graph(fixed)  # undirected copy
+
     offset = len(g)
 
     # divided graph
     divg = nx.Graph(g)
+    for edge in fixed.edges():
+        divg.remove_edge(*edge)
 
     for v in g:
-        divide_node(divg, v, offset)
+        if fixg.has_node(v):
+            nfixed = fixg.degree[v]
+        else:
+            nfixed = 0
+        divide_node(divg, v, offset, fixed, nfixed)
 
     # divg is made of chains and cycles.
+    # divg does not contain the edges in fixed.
     return divg
 
 
@@ -193,7 +234,60 @@ def simple_paths(
         # Flatten then path. It may make the path self-crossing.
         path = [v % nnode for v in path]
         # Divide a long path into simple paths and cycles.
-        yield from decompose_complex_path(path)</code></pre>
+        yield from decompose_complex_path(path)
+
+
+def decorate(g: nx.Graph):
+    &#34;&#34;&#34;Add virtual nodes to make all nodes 4-connected.
+
+    Args:
+        g (nx.Graph): _description_
+    &#34;&#34;&#34;
+    nodes = list(g)
+    for i in nodes:
+        room = 4 - len(g[i])
+        for j in range(room):
+            g.add_edge(i, -j - 1)
+
+
+def undecorate(g: Union[nx.Graph, nx.DiGraph]):
+    for i in range(-1, -5, -1):
+        if g.has_node(i):
+            g.remove_node(i)
+
+
+def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
+    # prepare the perimeter
+    perimeter = [
+        node for node in fixed if fixed.in_degree[node] + fixed.out_degree[node] &lt; 4
+    ]
+
+    while len(perimeter) &gt; 0:
+        node = perimeter.pop(0)
+        if node &lt; 0:
+            continue
+        if hook is not None:
+            hook(fixed)
+        # draw(pos, g, fixed)
+        # 水分子は仮想的に4本の水素結合を持っている。
+        # Balance principleにより、
+        # 入結合が固定されたら、出結合も同じ数だけ固定されねばならない。
+        while fixed.in_degree(node) &gt; fixed.out_degree(node):
+            e = random.choice(list(g[node]))
+            if not (fixed.has_edge(node, e) or fixed.has_edge(e, node)):
+                fixed.add_edge(node, e)
+                perimeter.append(e)
+        while fixed.in_degree(node) &lt; fixed.out_degree(node):
+            e = random.choice(list(g[node]))
+            if not (fixed.has_edge(node, e) or fixed.has_edge(e, node)):
+                fixed.add_edge(e, node)
+                perimeter.append(e)
+
+    # これで残った無向グラフにgenice-coreして、ちゃんとice ruleが満足されることを示す。
+
+    # ダミーノードを除去する
+    undecorate(g)
+    undecorate(fixed)</code></pre>
 </details>
 </section>
 <section>

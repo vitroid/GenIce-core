@@ -8,7 +8,7 @@ import numpy as np
 import networkx as nx
 
 
-def net_polarization(
+def vector_sum(
     dg: nx.DiGraph, vertexPositions: np.ndarray, isPeriodicBoundary: bool = False
 ) -> np.ndarray:
     """Net polarization (actually a vector sum) of a digraph
@@ -33,7 +33,7 @@ def net_polarization(
 def minimize_net_dipole(
     paths: list[list],
     vertexPositions: np.ndarray,
-    maxiter: int = 2000,
+    dipoleOptimizationCycles: int = 2000,
     isPeriodicBoundary: bool = False,
     targetPol: Union[np.ndarray, None] = None,
 ) -> list[list]:
@@ -52,61 +52,66 @@ def minimize_net_dipole(
     """
     logger = getLogger()
 
-    if maxiter < 1:
+    if dipoleOptimizationCycles < 1:
         return paths
 
     if targetPol is None:
         targetPol = np.zeros_like(vertexPositions[0])
 
     # polarized chains and cycles. Small cycle of dipoles are eliminated.
-    polarized = []
+    polarizedEdges = []
 
     dipoles = []
     for i, path in enumerate(paths):
         if isPeriodicBoundary:
             # vectors between adjacent vertices.
-            displace = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
+            relativeVector = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
             # PBC wrap
-            displace -= np.floor(displace + 0.5)
+            relativeVector -= np.floor(relativeVector + 0.5)
             # total dipole along the chain (or a cycle)
-            chain_pol = np.sum(displace, axis=0)
+            chainPol = np.sum(relativeVector, axis=0)
             # if it is large enough, i.e. if it is a spanning cycle,
-            if chain_pol @ chain_pol > 1e-6:
+            if chainPol @ chainPol > 1e-6:
                 logger.debug(path)
-                dipoles.append(chain_pol)
-                polarized.append(i)
+                dipoles.append(chainPol)
+                polarizedEdges.append(i)
         else:
             # dipole moment of a path; NOTE: No PBC.
             if path[0] != path[-1]:
                 # If no PBC, a chain pol is simply an end-to-end pol.
-                chain_pol = vertexPositions[path[-1]] - vertexPositions[path[0]]
-                dipoles.append(chain_pol)
-                polarized.append(i)
+                chainPol = vertexPositions[path[-1]] - vertexPositions[path[0]]
+                dipoles.append(chainPol)
+                polarizedEdges.append(i)
     dipoles = np.array(dipoles)
-    logger.debug(dipoles)
+    # logger.debug(dipoles)
 
-    pol_optimal = np.sum(dipoles, axis=0) - targetPol
-    logger.info(f"init {np.linalg.norm(pol_optimal)} dipole")
-    parity_optimal = np.ones(len(dipoles))
-    for loop in range(maxiter):
+    optimalParities = np.ones(len(dipoles))
+    optimalPol = optimalParities @ dipoles - targetPol
+    logger.info(f"init {optimalPol} dipole {targetPol}")
+
+    for loop in range(dipoleOptimizationCycles):
         # random sequence of +1/-1
-        parity = np.random.randint(2, size=len(dipoles)) * 2 - 1
+        parities = np.random.randint(2, size=len(dipoles)) * 2 - 1
+
         # Set directions to chains by parity.
-        net_pol = parity @ dipoles - targetPol
+        pol = parities @ dipoles - targetPol
+
         # If the new directions give better (smaller) net dipole moment,
-        if net_pol @ net_pol < pol_optimal @ pol_optimal:
+        if pol @ pol < optimalPol @ optimalPol:
             # that is the optimal
-            pol_optimal = net_pol
-            parity_optimal = parity
-            logger.info(f"{loop} {pol_optimal} dipole")
+            optimalPol = pol
+            optimalParities = parities
+            logger.info(f"{loop} {optimalPol} dipole")
+
             # if well-converged,
-            if pol_optimal @ pol_optimal < 1e-10:
+            if optimalPol @ optimalPol < 1e-10:
                 logger.debug("Optimized.")
                 break
 
     # invert some chains according to parity_optimal
-    for i, dir in zip(polarized, parity_optimal):
-        if dir < 0:
+    for i, parity in zip(polarizedEdges, optimalParities):
+        if parity < 0:
+            # invert the chain
             paths[i] = paths[i][::-1]
 
     return paths
