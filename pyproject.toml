@@ -25,5 +25,5 @@ dependencies = ["numpy", "networkx"]
 
 [genice]
 "logo" = "https://raw.githubusercontent.com/vitroid/GenIce/develop/logo/genice-v0.png"
-"url" = "https://github.com/vitroid/GenIce2"
+"url" = "https://github.com/vitroid/GenIce"
 "manual" = "https://vitroid.github.io/GenIce-core/genice_core"
