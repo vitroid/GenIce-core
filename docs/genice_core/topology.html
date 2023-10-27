@@ -38,10 +38,10 @@ from typing import Union
 import random
 
 # Generate documents for these functions only.
-__all__ = []
+# __all__ = []
 
 
-def extend_path(g: nx.Graph, path: list) -&gt; list:
+def _extend_path(g: nx.Graph, path: list) -&gt; list:
     &#34;&#34;&#34;extend the path
 
     Args:
@@ -65,7 +65,7 @@ def extend_path(g: nx.Graph, path: list) -&gt; list:
             return path
 
 
-def find_path(g: nx.Graph) -&gt; list:
+def _find_path(g: nx.Graph) -&gt; list:
     &#34;&#34;&#34;Find the path in g
 
     Args:
@@ -82,13 +82,13 @@ def find_path(g: nx.Graph) -&gt; list:
         return []
     elif len(nei) == 1:
         # an end node, fortunately.
-        return extend_path(g, [head, nei[0]])
-    c0 = extend_path(g, [head, nei[0]])
+        return _extend_path(g, [head, nei[0]])
+    c0 = _extend_path(g, [head, nei[0]])
 
     if c0[-1] != head:
         # linear chain graph
         # join the another side
-        c1 = extend_path(g, [head, nei[1]])
+        c1 = _extend_path(g, [head, nei[1]])
         return list(reversed(c0)) + c1[1:]
 
     # cyclic graph
@@ -108,7 +108,7 @@ def _divide(divg: nx.Graph, nei: list, vertex: int, offset: int):
         divg.add_edge(newVertex, migrant)
 
 
-def divide_node(
+def _divide_node(
     divg: nx.Graph, vertex: int, offset: int, fixed: nx.DiGraph, numFixedEdges: int
 ):
     nei = list(divg.neighbors(vertex))
@@ -167,14 +167,14 @@ def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -&gt; n
             nfixed = fixg.degree[v]
         else:
             nfixed = 0
-        divide_node(divg, v, offset, fixed, nfixed)
+        _divide_node(divg, v, offset, fixed, nfixed)
 
     # divg is made of chains and cycles.
     # divg does not contain the edges in fixed.
     return divg
 
 
-def decompose_complex_path(path: list):
+def _decompose_complex_path(path: list):
     &#34;&#34;&#34;A generator that divides a complex path with self-crossings to set of simple cycles and paths.
 
     Args:
@@ -212,16 +212,20 @@ def decompose_complex_path(path: list):
     logger.debug(f&#34;Done decomposition.&#34;)
 
 
-def simple_paths(
+def split_into_simple_paths(
     nnode: int,
     divg: nx.Graph,
 ):
-    &#34;&#34;&#34;
-    Set the orientations to the components.
+    &#34;&#34;&#34;Set the orientations to the components.
 
-    nnode (int): number of nodes in the original graph.
-    divg (nx.Graph): the divided graph.
+    Args:
+        nnode (int): number of nodes in the original graph.
+        divg (nx.Graph): the divided graph.
+
+    Yields:
+        list: a short and simple path/cycle
     &#34;&#34;&#34;
+
     for c in nx.connected_components(divg):
         # a component of c is either a chain or a cycle.
         subg = divg.subgraph(c)
@@ -230,27 +234,27 @@ def simple_paths(
         assert nn == ne or nn == ne + 1
         # Find a simple path in the doubled graph
         # It must be a simple path or a simple cycle.
-        path = find_path(subg)
+        path = _find_path(subg)
         # Flatten then path. It may make the path self-crossing.
         path = [v % nnode for v in path]
         # Divide a long path into simple paths and cycles.
-        yield from decompose_complex_path(path)
+        yield from _decompose_complex_path(path)
 
 
-def decorate(g: nx.Graph):
-    &#34;&#34;&#34;Add virtual nodes to make all nodes 4-connected.
+# def _decorate(g: nx.Graph):
+#     &#34;&#34;&#34;Add virtual nodes to make all nodes 4-connected.
 
-    Args:
-        g (nx.Graph): _description_
-    &#34;&#34;&#34;
-    nodes = list(g)
-    for i in nodes:
-        room = 4 - len(g[i])
-        for j in range(room):
-            g.add_edge(i, -j - 1)
+#     Args:
+#         g (nx.Graph): _description_
+#     &#34;&#34;&#34;
+#     nodes = list(g)
+#     for i in nodes:
+#         room = 4 - len(g[i])
+#         for j in range(room):
+#             g.add_edge(i, -j - 1)
 
 
-def undecorate(g: Union[nx.Graph, nx.DiGraph]):
+def _remove_dummy_nodes(g: Union[nx.Graph, nx.DiGraph]):
     for i in range(-1, -5, -1):
         if g.has_node(i):
             g.remove_node(i)
@@ -259,7 +263,9 @@ def undecorate(g: Union[nx.Graph, nx.DiGraph]):
 def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
     # prepare the perimeter
     perimeter = [
-        node for node in fixed if fixed.in_degree[node] + fixed.out_degree[node] &lt; 4
+        node
+        for node in fixed
+        if fixed.in_degree[node] + fixed.out_degree[node] &lt; g.degree[node]
     ]
 
     while len(perimeter) &gt; 0:
@@ -272,22 +278,24 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
         # 水分子は仮想的に4本の水素結合を持っている。
         # Balance principleにより、
         # 入結合が固定されたら、出結合も同じ数だけ固定されねばならない。
+        neighborNodes = list(g[node]) + [-1, -2, -3, -4]
+        neighborNodes = neighborNodes[:4]
         while fixed.in_degree(node) &gt; fixed.out_degree(node):
-            e = random.choice(list(g[node]))
-            if not (fixed.has_edge(node, e) or fixed.has_edge(e, node)):
-                fixed.add_edge(node, e)
-                perimeter.append(e)
+            next = random.choice(neighborNodes)
+            if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
+                fixed.add_edge(node, next)
+                perimeter.append(next)
         while fixed.in_degree(node) &lt; fixed.out_degree(node):
-            e = random.choice(list(g[node]))
-            if not (fixed.has_edge(node, e) or fixed.has_edge(e, node)):
-                fixed.add_edge(e, node)
-                perimeter.append(e)
+            next = random.choice(neighborNodes)
+            if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
+                fixed.add_edge(next, node)
+                perimeter.append(next)
 
     # これで残った無向グラフにgenice-coreして、ちゃんとice ruleが満足されることを示す。
 
     # ダミーノードを除去する
-    undecorate(g)
-    undecorate(fixed)</code></pre>
+    # undecorate(g)
+    _remove_dummy_nodes(fixed)</code></pre>
 </details>
 </section>
 <section>
@@ -295,6 +303,164 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="genice_core.topology.balance"><code class="name flex">
+<span>def <span class="ident">balance</span></span>(<span>fixed: networkx.classes.digraph.DiGraph, g: networkx.classes.graph.Graph, hook=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
+    # prepare the perimeter
+    perimeter = [
+        node
+        for node in fixed
+        if fixed.in_degree[node] + fixed.out_degree[node] &lt; g.degree[node]
+    ]
+
+    while len(perimeter) &gt; 0:
+        node = perimeter.pop(0)
+        if node &lt; 0:
+            continue
+        if hook is not None:
+            hook(fixed)
+        # draw(pos, g, fixed)
+        # 水分子は仮想的に4本の水素結合を持っている。
+        # Balance principleにより、
+        # 入結合が固定されたら、出結合も同じ数だけ固定されねばならない。
+        neighborNodes = list(g[node]) + [-1, -2, -3, -4]
+        neighborNodes = neighborNodes[:4]
+        while fixed.in_degree(node) &gt; fixed.out_degree(node):
+            next = random.choice(neighborNodes)
+            if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
+                fixed.add_edge(node, next)
+                perimeter.append(next)
+        while fixed.in_degree(node) &lt; fixed.out_degree(node):
+            next = random.choice(neighborNodes)
+            if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
+                fixed.add_edge(next, node)
+                perimeter.append(next)
+
+    # これで残った無向グラフにgenice-coreして、ちゃんとice ruleが満足されることを示す。
+
+    # ダミーノードを除去する
+    # undecorate(g)
+    _remove_dummy_nodes(fixed)</code></pre>
+</details>
+</dd>
+<dt id="genice_core.topology.noodlize"><code class="name flex">
+<span>def <span class="ident">noodlize</span></span>(<span>g: networkx.classes.graph.Graph, fixed: Optional[networkx.classes.digraph.DiGraph] = &lt;networkx.classes.digraph.DiGraph object&gt;) ‑> networkx.classes.graph.Graph</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Divide each vertex of the graph and make a set of paths.</p>
+<p>A new algorithm suggested by Prof. Sakuma, Yamagata University.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>g</code></strong> :&ensp;<code>nx.Graph</code></dt>
+<dd>An ice-like undirected graph. All vertices must not be &gt;4-degree.</dd>
+<dt><strong><code>fixed</code></strong> :&ensp;<code>Union[nx.DiGraph,None]</code>, optional</dt>
+<dd>Specifies the edges whose direction is fixed.. Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>nx.Graph</code></dt>
+<dd>A graph mode of chains and cycles.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -&gt; nx.Graph:
+    &#34;&#34;&#34;Divide each vertex of the graph and make a set of paths.
+
+    A new algorithm suggested by Prof. Sakuma, Yamagata University.
+
+    Args:
+        g (nx.Graph): An ice-like undirected graph. All vertices must not be &gt;4-degree.
+        fixed (Union[nx.DiGraph,None], optional): Specifies the edges whose direction is fixed.. Defaults to None.
+
+    Returns:
+        nx.Graph: A graph mode of chains and cycles.
+    &#34;&#34;&#34;
+
+    logger = getLogger()
+
+    fixg = nx.Graph(fixed)  # undirected copy
+
+    offset = len(g)
+
+    # divided graph
+    divg = nx.Graph(g)
+    for edge in fixed.edges():
+        divg.remove_edge(*edge)
+
+    for v in g:
+        if fixg.has_node(v):
+            nfixed = fixg.degree[v]
+        else:
+            nfixed = 0
+        _divide_node(divg, v, offset, fixed, nfixed)
+
+    # divg is made of chains and cycles.
+    # divg does not contain the edges in fixed.
+    return divg</code></pre>
+</details>
+</dd>
+<dt id="genice_core.topology.split_into_simple_paths"><code class="name flex">
+<span>def <span class="ident">split_into_simple_paths</span></span>(<span>nnode: int, divg: networkx.classes.graph.Graph)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set the orientations to the components.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>nnode</code></strong> :&ensp;<code>int</code></dt>
+<dd>number of nodes in the original graph.</dd>
+<dt><strong><code>divg</code></strong> :&ensp;<code>nx.Graph</code></dt>
+<dd>the divided graph.</dd>
+</dl>
+<h2 id="yields">Yields</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>a short and simple path/cycle</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split_into_simple_paths(
+    nnode: int,
+    divg: nx.Graph,
+):
+    &#34;&#34;&#34;Set the orientations to the components.
+
+    Args:
+        nnode (int): number of nodes in the original graph.
+        divg (nx.Graph): the divided graph.
+
+    Yields:
+        list: a short and simple path/cycle
+    &#34;&#34;&#34;
+
+    for c in nx.connected_components(divg):
+        # a component of c is either a chain or a cycle.
+        subg = divg.subgraph(c)
+        nn = len(subg)
+        ne = len([e for e in subg.edges()])
+        assert nn == ne or nn == ne + 1
+        # Find a simple path in the doubled graph
+        # It must be a simple path or a simple cycle.
+        path = _find_path(subg)
+        # Flatten then path. It may make the path self-crossing.
+        path = [v % nnode for v in path]
+        # Divide a long path into simple paths and cycles.
+        yield from _decompose_complex_path(path)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -308,6 +474,13 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="genice_core" href="index.html">genice_core</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="genice_core.topology.balance" href="#genice_core.topology.balance">balance</a></code></li>
+<li><code><a title="genice_core.topology.noodlize" href="#genice_core.topology.noodlize">noodlize</a></code></li>
+<li><code><a title="genice_core.topology.split_into_simple_paths" href="#genice_core.topology.split_into_simple_paths">split_into_simple_paths</a></code></li>
 </ul>
 </li>
 </ul>

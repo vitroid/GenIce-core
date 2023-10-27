@@ -59,7 +59,7 @@ def vector_sum(
     return pol
 
 
-def minimize_net_dipole(
+def optimize(
     paths: list[list],
     vertexPositions: np.ndarray,
     dipoleOptimizationCycles: int = 2000,
@@ -153,8 +153,8 @@ def minimize_net_dipole(
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="genice_core.dipole.minimize_net_dipole"><code class="name flex">
-<span>def <span class="ident">minimize_net_dipole</span></span>(<span>paths: list[list], vertexPositions: numpy.ndarray, dipoleOptimizationCycles: int = 2000, isPeriodicBoundary: bool = False, targetPol: Optional[numpy.ndarray] = None) ‑> list[list]</span>
+<dt id="genice_core.dipole.optimize"><code class="name flex">
+<span>def <span class="ident">optimize</span></span>(<span>paths: list[list], vertexPositions: numpy.ndarray, dipoleOptimizationCycles: int = 2000, isPeriodicBoundary: bool = False, targetPol: Optional[numpy.ndarray] = None) ‑> list[list]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Minimize the net polarization by flipping several paths.</p>
@@ -180,7 +180,7 @@ def minimize_net_dipole(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def minimize_net_dipole(
+<pre><code class="python">def optimize(
     paths: list[list],
     vertexPositions: np.ndarray,
     dipoleOptimizationCycles: int = 2000,
@@ -330,7 +330,7 @@ def minimize_net_dipole(
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="genice_core.dipole.minimize_net_dipole" href="#genice_core.dipole.minimize_net_dipole">minimize_net_dipole</a></code></li>
+<li><code><a title="genice_core.dipole.optimize" href="#genice_core.dipole.optimize">optimize</a></code></li>
 <li><code><a title="genice_core.dipole.vector_sum" href="#genice_core.dipole.vector_sum">vector_sum</a></code></li>
 </ul>
 </li>

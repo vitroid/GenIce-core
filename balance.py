@@ -88,7 +88,7 @@ g = nx.Graph(
 # でも表面積が大きいと時間がばかにならない。なしにできないかな。
 # できそうだね。
 
-genice_core.topology.decorate(g)
+# genice_core.topology.decorate(g)
 
 # 固定辺のグラフ。こちらも仮想隣接分子を置く。
 fixed = nx.DiGraph()
@@ -104,19 +104,15 @@ for nei in neis:
     fixed.add_edge(nei, F)
 
 
-genice_core.topology.balance(fixed, g, hook=lambda fixed: draw(pos, g, fixed))
-
-
-totalPol = genice_core.dipole.vector_sum(fixed, pos)
-logger.info(f"{totalPol}={np.linalg.norm(totalPol):.3f} net dipole before optimization")
-
 # 固定されなかった部分を作る。固定部分の分極をキャンセルするように。
 dg = genice_core.ice_graph(
     g,
     vertexPositions=pos,
     dipoleOptimizationCycles=100,
-    fixed=fixed,
+    fixedEdges=fixed,
+    hook=lambda fixed: draw(pos, g, fixed),
 )
+
 draw(pos, nx.Graph(), dg)
 
 for i, j in fixed.edges:

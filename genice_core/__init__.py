@@ -7,8 +7,8 @@ Optimizes the orientations of directed paths to reduce the net dipole moment.
 """
 import numpy as np
 import networkx as nx
-from genice_core.topology import noodlize, simple_paths
-from genice_core.dipole import minimize_net_dipole, vector_sum
+from genice_core.topology import noodlize, split_into_simple_paths, balance
+from genice_core.dipole import optimize, vector_sum
 from typing import Union
 
 
@@ -17,7 +17,8 @@ def ice_graph(
     vertexPositions: Union[np.ndarray, None] = None,
     isPeriodicBoundary: bool = False,
     dipoleOptimizationCycles: int = 0,
-    fixed: Union[nx.DiGraph, None] = nx.DiGraph(),
+    fixedEdges: Union[nx.DiGraph, None] = nx.DiGraph(),
+    hook=None,
 ) -> nx.DiGraph:
     """Make a digraph that obeys the ice rules.
 
@@ -33,21 +34,24 @@ def ice_graph(
     Returns:
         nx.DiGraph: An ice graph.
     """
+    if fixedEdges is not None:
+        balance(fixedEdges, g, hook=hook)
+
     # Divide the graph into noodle graph
-    divg = noodlize(g, fixed)
+    dividedGraph = noodlize(g, fixedEdges)
 
     # Simplify paths ( paths with least crossings )
-    paths = list(simple_paths(len(g), divg))
+    paths = list(split_into_simple_paths(len(g), dividedGraph))
 
     # arrange the orientations here if you want to balance the polarization
     if vertexPositions is not None:
-        if fixed is not None:
+        if fixedEdges is not None:
             # Set the targetPol in order to cancel the polarization in fixed.
-            targetPol = -vector_sum(fixed, vertexPositions, isPeriodicBoundary)
+            targetPol = -vector_sum(fixedEdges, vertexPositions, isPeriodicBoundary)
         else:
             targetPol = np.zeros(3)
 
-        paths = minimize_net_dipole(
+        paths = optimize(
             paths,
             vertexPositions,
             isPeriodicBoundary=isPeriodicBoundary,

@@ -30,7 +30,7 @@ def vector_sum(
     return pol
 
 
-def minimize_net_dipole(
+def optimize(
     paths: list[list],
     vertexPositions: np.ndarray,
     dipoleOptimizationCycles: int = 2000,
