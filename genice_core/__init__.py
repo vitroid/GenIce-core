@@ -10,6 +10,7 @@ import networkx as nx
 from genice_core.topology import noodlize, split_into_simple_paths, balance
 from genice_core.dipole import optimize, vector_sum
 from typing import Union
+from logging import getLogger
 
 
 def ice_graph(
@@ -34,6 +35,11 @@ def ice_graph(
     Returns:
         nx.DiGraph: An ice graph (fixed part is excluded).
     """
+    logger = getLogger()
+
+    logger.debug(g)
+    logger.debug(fixedEdges)
+
     if fixedEdges is not None:
         balance(fixedEdges, g, hook=hook)
 
