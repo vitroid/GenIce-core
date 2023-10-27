@@ -8,7 +8,7 @@ build: $(SOURCES) README.md doc
 
 # https://qiita.com/yukinarit/items/0996180032c077443efb
 # https://zenn.dev/atu4403/articles/python-githubpages
-doc:
+doc: README.md CITATION.cff 
 	pdoc3 --html -o docs --force genice_core
 
 
