@@ -232,6 +232,12 @@ def _remove_dummy_nodes(g: Union[nx.Graph, nx.DiGraph]):
 
 
 def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
+    """Extend the prefixed digraph to make the remaining graph balanced.
+
+    Args:
+        fixed (nx.DiGraph): fixed edges
+        g (nx.Graph): skeletal graph
+    """
     # prepare the perimeter
     perimeter = [
         node
@@ -245,25 +251,21 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
             continue
         if hook is not None:
             hook(fixed)
-        # draw(pos, g, fixed)
-        # 水分子は仮想的に4本の水素結合を持っている。
-        # Balance principleにより、
-        # 入結合が固定されたら、出結合も同じ数だけ固定されねばならない。
+
+        # fill if degree is less than 4
         neighborNodes = list(g[node]) + [-1, -2, -3, -4]
         neighborNodes = neighborNodes[:4]
+
         while fixed.in_degree(node) > fixed.out_degree(node):
             next = random.choice(neighborNodes)
             if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
                 fixed.add_edge(node, next)
                 perimeter.append(next)
+
         while fixed.in_degree(node) < fixed.out_degree(node):
             next = random.choice(neighborNodes)
             if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
                 fixed.add_edge(next, node)
                 perimeter.append(next)
 
-    # これで残った無向グラフにgenice-coreして、ちゃんとice ruleが満足されることを示す。
-
-    # ダミーノードを除去する
-    # undecorate(g)
     _remove_dummy_nodes(fixed)

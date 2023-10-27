@@ -64,7 +64,8 @@ basicConfig(
 )
 
 
-# random.seed(0)
+random.seed(0)
+np.random.seed(0)
 
 # diamond graph
 N = 8
@@ -81,14 +82,6 @@ g = nx.Graph(
         for i, j in pl.pairs_iter(pos, 3**0.5 + 0.1, fractional=False, distance=False)
     ]
 )
-
-# 結合が4本に満たない場合は負数を入れておく。
-# 仮想的に、すべての水分子が4配位であるものとする。
-# (あとの処理が簡単にできるので)
-# でも表面積が大きいと時間がばかにならない。なしにできないかな。
-# できそうだね。
-
-# genice_core.topology.decorate(g)
 
 # 固定辺のグラフ。こちらも仮想隣接分子を置く。
 fixed = nx.DiGraph()
@@ -115,21 +108,23 @@ dg = genice_core.ice_graph(
 
 draw(pos, nx.Graph(), dg)
 
-for i, j in fixed.edges:
-    assert i >= 0 and j >= 0, (i, j)
-    dg.add_edge(i, j)
+combined = nx.compose(fixed, dg)
+draw(pos, nx.Graph(), combined)
 
 
-totalPol = genice_core.dipole.vector_sum(dg, pos)
+totalPol = genice_core.dipole.vector_sum(combined, pos)
 logger.info(f"{totalPol}={np.linalg.norm(totalPol):.3f} net dipole after optimization")
 
 
-draw(pos, nx.Graph(), dg)
-
-
-for node in dg:
+for node in combined:
     if node not in (NH4, F):
-        assert dg.in_degree[node] <= 2, (dg.in_degree[node], dg.out_degree[node])
-        assert dg.out_degree[node] <= 2, (dg.in_degree[node], dg.out_degree[node])
+        assert combined.in_degree[node] <= 2, (
+            combined.in_degree[node],
+            dg.out_degree[node],
+        )
+        assert combined.out_degree[node] <= 2, (
+            combined.in_degree[node],
+            dg.out_degree[node],
+        )
 
 # これがうまくいったら、氷XVの部分秩序化に適用してみる。

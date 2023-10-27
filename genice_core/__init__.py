@@ -32,7 +32,7 @@ def ice_graph(
         fixed (Union[nx.DiGraph, None], optional): A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.
 
     Returns:
-        nx.DiGraph: An ice graph.
+        nx.DiGraph: An ice graph (fixed part is excluded).
     """
     if fixedEdges is not None:
         balance(fixedEdges, g, hook=hook)

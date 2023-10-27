@@ -121,7 +121,7 @@ def ice_graph(
         fixed (Union[nx.DiGraph, None], optional): A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.
 
     Returns:
-        nx.DiGraph: An ice graph.
+        nx.DiGraph: An ice graph (fixed part is excluded).
     &#34;&#34;&#34;
     if fixedEdges is not None:
         balance(fixedEdges, g, hook=hook)
@@ -193,7 +193,7 @@ def ice_graph(
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>nx.DiGraph</code></dt>
-<dd>An ice graph.</dd>
+<dd>An ice graph (fixed part is excluded).</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -219,7 +219,7 @@ def ice_graph(
         fixed (Union[nx.DiGraph, None], optional): A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.
 
     Returns:
-        nx.DiGraph: An ice graph.
+        nx.DiGraph: An ice graph (fixed part is excluded).
     &#34;&#34;&#34;
     if fixedEdges is not None:
         balance(fixedEdges, g, hook=hook)
