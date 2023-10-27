@@ -35,7 +35,6 @@ check:
 
 %: temp_% replacer.py pyproject.toml
 	python replacer.py < $< > $@
-	-fgrep '{{' $@
 
 
 

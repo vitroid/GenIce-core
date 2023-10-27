@@ -1,4 +1,4 @@
-![Logo]({{genice.logo}})
+![Logo]({{project.genice.logo}})
 
 # GenIce-core
 
@@ -26,7 +26,7 @@ Install with pip3.
 
 ## API
 
-API manual is [here]({{genice.manual}}).
+API manual is [here]({{project.urls.manual}}).
 
 ## Examples
 
@@ -78,4 +78,4 @@ M. Matsumoto, T. Yagasaki, and H. Tanaka, “Novel Algorithm to Generate Hydroge
 
 ## How to contribute
 
-GenIce has been available as open source software on GitHub({{genice.url}}) since 2015. Feedback, suggestions for improvements and enhancements, bug fixes, etc. are sincerely welcome. Developers and test users are also welcome. If you have any ice that is publicly available but not included in GenIce, please let me know.
+GenIce has been available as open source software on GitHub({{project.genice.url}}) since 2015. Feedback, suggestions for improvements and enhancements, bug fixes, etc. are sincerely welcome. Developers and test users are also welcome. If you have any ice that is publicly available but not included in GenIce, please let me know.
