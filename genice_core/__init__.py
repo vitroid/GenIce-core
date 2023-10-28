@@ -66,5 +66,8 @@ def ice_graph(
         )
 
     # paths to digraph
-    dg = nx.DiGraph([(i, j) for path in paths for i, j in zip(path, path[1:])])
+    dg = nx.DiGraph()
+    for path in paths:
+        nx.add_path(dg, path)
+
     return dg
