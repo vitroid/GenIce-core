@@ -25,7 +25,7 @@
 <p><img alt="Logo" src="https://raw.githubusercontent.com/vitroid/GenIce/develop/logo/genice-v0.png"></p>
 <h1 id="genice-core">GenIce-core</h1>
 <p>Core algorithms of GenIce2</p>
-<p>version 0.5.1</p>
+<p>version 0.6</p>
 <h2 id="requirements">Requirements</h2>
 <ul>
 <li>numpy</li>
@@ -155,7 +155,10 @@ def ice_graph(
         )
 
     # paths to digraph
-    dg = nx.DiGraph([(i, j) for path in paths for i, j in zip(path, path[1:])])
+    dg = nx.DiGraph()
+    for path in paths:
+        nx.add_path(dg, path)
+
     return dg</code></pre>
 </details>
 </section>
@@ -258,7 +261,10 @@ def ice_graph(
         )
 
     # paths to digraph
-    dg = nx.DiGraph([(i, j) for path in paths for i, j in zip(path, path[1:])])
+    dg = nx.DiGraph()
+    for path in paths:
+        nx.add_path(dg, path)
+
     return dg</code></pre>
 </details>
 </dd>

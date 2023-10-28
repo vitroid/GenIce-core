@@ -116,7 +116,7 @@ def optimize(
 
     optimalParities = np.ones(len(dipoles))
     optimalPol = optimalParities @ dipoles - targetPol
-    logger.info(f&#34;init {optimalPol} dipole {targetPol}&#34;)
+    logger.debug(f&#34;init {optimalPol} dipole {targetPol}&#34;)
 
     for loop in range(dipoleOptimizationCycles):
         # random sequence of +1/-1
@@ -237,7 +237,7 @@ def optimize(
 
     optimalParities = np.ones(len(dipoles))
     optimalPol = optimalParities @ dipoles - targetPol
-    logger.info(f&#34;init {optimalPol} dipole {targetPol}&#34;)
+    logger.debug(f&#34;init {optimalPol} dipole {targetPol}&#34;)
 
     for loop in range(dipoleOptimizationCycles):
         # random sequence of +1/-1

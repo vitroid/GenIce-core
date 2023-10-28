@@ -4,7 +4,7 @@
 
 Core algorithms of GenIce2
 
-version 0.5.1
+version 0.6
 
 
 ## Requirements
