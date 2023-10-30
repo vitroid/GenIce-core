@@ -10,6 +10,8 @@ build: $(SOURCES) README.md doc
 # https://zenn.dev/atu4403/articles/python-githubpages
 doc: README.md CITATION.cff 
 	pdoc3 --html -o docs --force genice_core
+	-ln -s docs/genice_core pages
+
 
 
 # pep8:
