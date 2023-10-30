@@ -27,7 +27,7 @@ Install with pip3.
 
 ## API
 
-API manual is [here](https://vitroid.github.io/GenIce-core/genice_core).
+API manual is [here](https://vitroid.github.io/GenIce-core).
 
 ## Examples
 

@@ -22,7 +22,7 @@ dependencies = ["numpy", "networkx"]
 [project.urls]
 "Homepage" = "https://github.com/vitroid/GenIce-core"
 "Bug Tracker" = "https://github.com/vitroid/GenIce-core/issues"
-"manual" = "https://vitroid.github.io/GenIce-core/genice_core"
+"manual" = "https://vitroid.github.io/GenIce-core"
 
 [project.genice]
 "logo" = "https://raw.githubusercontent.com/vitroid/GenIce/develop/logo/genice-v0.png"
