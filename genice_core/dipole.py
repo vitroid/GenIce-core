@@ -21,7 +21,7 @@ def vector_sum(
     Returns:
         np.ndarray: net polarization
     """
-    pol = np.zeros(3)
+    pol = np.zeros_like(vertexPositions[0])
     for i, j in dg.edges():
         d = vertexPositions[j] - vertexPositions[i]
         if isPeriodicBoundary:
