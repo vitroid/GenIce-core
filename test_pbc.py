@@ -9,7 +9,7 @@ from genice2.plugin import Format, Lattice
 from genice_core import ice_graph
 
 logger = getLogger()
-basicConfig(level=DEBUG)
+basicConfig(level=INFO)
 
 lattice = Lattice("1h")
 formatter = Format("raw", stage=(1, 2))
