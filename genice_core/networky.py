@@ -8,7 +8,6 @@ import networkx as nx
 class Graph(Dict):
     def __init__(self, g=None):
         self._edges = defaultdict(set)
-        print(type(g))
         if type(g) is list:
             self.add_edges(g)
         elif g is None:
