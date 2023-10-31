@@ -9,7 +9,7 @@ from genice2.plugin import Format, Lattice
 from genice_core import ice_graph
 
 logger = getLogger()
-basicConfig(level=DEBUG)
+basicConfig(level=INFO)
 
 lattice = Lattice("1h")
 formatter = Format("raw", stage=(1, 2))
@@ -22,7 +22,17 @@ layout = raw["reppositions"]
 # repcell is the cell matrix (transposed)
 cell = raw["repcell"]
 
+fixed = nx.DiGraph(
+    [
+        [0, 4],
+    ]
+)
+
 # set orientations of the hydrogen bonds.
 dg = ice_graph(
-    g, vertexPositions=layout, isPeriodicBoundary=True, dipoleOptimizationCycles=100
+    g,
+    vertexPositions=layout,
+    isPeriodicBoundary=True,
+    dipoleOptimizationCycles=100,
+    fixedEdges=fixed,
 )

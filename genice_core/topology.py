@@ -21,7 +21,7 @@ def _trace_path(g: nx.Graph, path: list) -> list:
     while True:
         # look at the head of the path
         last, head = path[-2:]
-        for next in g.neighbors(head):
+        for next in g[head]:
             if next != last:
                 # go ahead
                 break
@@ -47,28 +47,28 @@ def _find_path(g: nx.Graph) -> list:
     # choose one node
     head = nodes[0]
     # look neighbors
-    nei = list(g[head])
-    if len(nei) == 0:
+    neighbors = list(g[head])
+    if len(neighbors) == 0:
         # isolated node
         return []
-    elif len(nei) == 1:
+    elif len(neighbors) == 1:
         # head is an end node, fortunately.
-        return _trace_path(g, [head, nei[0]])
+        return _trace_path(g, [head, neighbors[0]])
     # look forward
-    c0 = _trace_path(g, [head, nei[0]])
+    c0 = _trace_path(g, [head, neighbors[0]])
 
     if c0[-1] == head:
         # cyclic graph
         return c0
 
     # look backward
-    c1 = _trace_path(g, [head, nei[1]])
+    c1 = _trace_path(g, [head, neighbors[1]])
     return c0[::-1] + c1[1:]
 
 
-def _divide(divg: nx.Graph, nei: list, vertex: int, offset: int):
+def _divide(g: nx.Graph, vertex: int, offset: int):
     # fill by Nones if number of neighbors is less than 4
-    nei = (nei + [None, None, None, None])[:4]
+    nei = (list(g[vertex]) + [None, None, None, None])[:4]
 
     # two neighbor nodes that are passed away to the new node
     migrants = set(np.random.choice(nei, 2, replace=False)) - set([None])
@@ -78,19 +78,11 @@ def _divide(divg: nx.Graph, nei: list, vertex: int, offset: int):
 
     # assemble edges
     for migrant in migrants:
-        divg.remove_edge(migrant, vertex)
-        divg.add_edge(newVertex, migrant)
+        g.remove_edge(migrant, vertex)
+        g.add_edge(newVertex, migrant)
 
 
-def _divide_node(divg: nx.Graph, vertex: int, offset: int, numFixedEdges: int):
-    nei = list(divg.neighbors(vertex))
-
-    if numFixedEdges == 0:
-        _divide(divg, nei, vertex, offset)
-    # division is not necessary in any other cases.
-
-
-def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -> nx.Graph:
+def noodlize(g: nx.Graph, fixed: nx.DiGraph = nx.DiGraph()) -> nx.Graph:
     """Divide each vertex of the graph and make a set of paths.
 
     A new algorithm suggested by Prof. Sakuma, Yamagata University.
@@ -105,25 +97,26 @@ def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -> nx.G
 
     logger = getLogger()
 
-    fixg = nx.Graph(fixed)  # undirected copy
+    g_fix = nx.Graph(fixed)  # undirected copy
 
     offset = len(g)
 
     # divided graph
-    divg = nx.Graph(g)
+    g_noodles = nx.Graph(g)
     for edge in fixed.edges():
-        divg.remove_edge(*edge)
+        g_noodles.remove_edge(*edge)
 
     for v in g:
-        if fixg.has_node(v):
-            nfixed = fixg.degree[v]
+        if g_fix.has_node(v):
+            nfixed = g_fix.degree[v]
         else:
             nfixed = 0
-        _divide_node(divg, v, offset, nfixed)
+        if nfixed == 0:
+            _divide(g_noodles, v, offset)
 
     # divg is made of chains and cycles.
     # divg does not contain the edges in fixed.
-    return divg
+    return g_noodles
 
 
 def _decompose_complex_path(path: list):
@@ -170,7 +163,7 @@ def _decompose_complex_path(path: list):
 
 def split_into_simple_paths(
     nnode: int,
-    divg: nx.Graph,
+    g_noodles: nx.Graph,
 ):
     """Set the orientations to the components.
 
@@ -182,22 +175,22 @@ def split_into_simple_paths(
         list: a short and simple path/cycle
     """
 
-    for c in nx.connected_components(divg):
+    for verticeSet in nx.connected_components(g_noodles):
         # a component of c is either a chain or a cycle.
-        subg = divg.subgraph(c)
-        nn = len(subg)
-        ne = len([e for e in subg.edges()])
-        assert nn == ne or nn == ne + 1
+        g_noodle = g_noodles.subgraph(verticeSet)
+        # nn = len(g_noodle)
+        # ne = len([e for e in g_noodle.edges()])
+        # assert nn == ne or nn == ne + 1
 
         # Find a simple path in the doubled graph
         # It must be a simple path or a simple cycle.
-        path = _find_path(subg)
+        path = _find_path(g_noodle)
 
         # Flatten then path. It may make the path self-crossing.
-        path = [v % nnode for v in path]
+        flatten = [v % nnode for v in path]
 
         # Divide a long path into simple paths and cycles.
-        yield from _decompose_complex_path(path)
+        yield from _decompose_complex_path(flatten)
 
 
 def _remove_dummy_nodes(g: Union[nx.Graph, nx.DiGraph]):
