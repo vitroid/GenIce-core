@@ -46,7 +46,7 @@ def _find_path(g: nx.Graph) -> list:
     logger = getLogger()
 
     nodes = list(g.nodes())
-    logger.info(f"{[(i,j) for i,j in g.edges()]} _find_path()")
+    # logger.info(f"{[(i,j) for i,j in g.edges()]} _find_path()")
     # choose one node
     head = nodes[0]
     # look neighbors
@@ -114,7 +114,7 @@ def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -> nx.G
 
     # divided graph
     divg = nx.Graph(g)
-    logger.info(f"{[(i,j) for i,j in divg.edges()]} noodlize()")
+    # logger.info(f"{[(i,j) for i,j in divg.edges()]} noodlize()")
     for edge in fixed.edges():
         divg.remove_edge(*edge)
 
@@ -166,7 +166,7 @@ def _decompose_complex_path(path: list):
         order[node] = len(order)
         store.append(node)
         headp += 1
-        logger.debug([order, store])
+        # logger.debug([order, store])
     if len(store) > 1:
         yield store
     logger.debug(f"Done decomposition.")
@@ -190,7 +190,7 @@ def split_into_simple_paths(
     for c in nx.connected_components(divg):
         # a component of c is either a chain or a cycle.
         subg = divg.subgraph(c)
-        logger.info(f"{[(i,j) for i,j in subg.edges()]} split_into_simple_paths()")
+        # logger.info(f"{[(i,j) for i,j in subg.edges()]} split_into_simple_paths()")
         nn = len(subg)
         ne = len([e for e in subg.edges()])
         assert nn == ne or nn == ne + 1
@@ -199,7 +199,7 @@ def split_into_simple_paths(
         # Find a simple path in the doubled graph
         # It must be a simple path or a simple cycle.
         path = _find_path(subg)
-        logger.debug(f"{path} $$$$$$$$$$$$$$$$$$$$$path")
+        # logger.debug(f"{path} $$$$$$$$$$$$$$$$$$$$$path")
 
         # Flatten then path. It may make the path self-crossing.
         path = [v % nnode for v in path]
