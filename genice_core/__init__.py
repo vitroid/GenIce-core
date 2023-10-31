@@ -6,7 +6,7 @@
 Optimizes the orientations of directed paths to reduce the net dipole moment.
 """
 import numpy as np
-import networkx as nx
+import genice_core.networky as nx
 from genice_core.topology import noodlize, split_into_simple_paths, balance
 from genice_core.dipole import optimize, vector_sum
 from typing import Union
@@ -52,6 +52,7 @@ def ice_graph(
     now = time.time()
     # Simplify paths ( paths with least crossings )
     paths = list(split_into_simple_paths(len(g), dividedGraph))
+    logger.debug(f"{[path for path in paths]} paths ############################")
     logger.info(f"{time.time() - now} sec split_into_simple_paths()")
 
     # arrange the orientations here if you want to balance the polarization

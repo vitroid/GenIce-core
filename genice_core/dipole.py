@@ -5,7 +5,7 @@ from logging import getLogger, DEBUG
 from typing import Union
 
 import numpy as np
-import networkx as nx
+import genice_core.networky as nx
 
 
 def vector_sum(

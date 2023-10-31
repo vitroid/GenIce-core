@@ -3,7 +3,7 @@ Arrange edges appropriately.
 """
 
 from logging import getLogger, DEBUG
-import networkx as nx
+import genice_core.networky as nx
 import numpy as np
 from typing import Union
 
@@ -43,7 +43,10 @@ def _find_path(g: nx.Graph) -> list:
     Returns:
         list: the path or cycle
     """
+    logger = getLogger()
+
     nodes = list(g.nodes())
+    logger.info(f"{[(i,j) for i,j in g.edges()]} _find_path()")
     # choose one node
     head = nodes[0]
     # look neighbors
@@ -111,6 +114,7 @@ def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -> nx.G
 
     # divided graph
     divg = nx.Graph(g)
+    logger.info(f"{[(i,j) for i,j in divg.edges()]} noodlize()")
     for edge in fixed.edges():
         divg.remove_edge(*edge)
 
@@ -181,17 +185,21 @@ def split_into_simple_paths(
     Yields:
         list: a short and simple path/cycle
     """
+    logger = getLogger()
 
     for c in nx.connected_components(divg):
         # a component of c is either a chain or a cycle.
         subg = divg.subgraph(c)
+        logger.info(f"{[(i,j) for i,j in subg.edges()]} split_into_simple_paths()")
         nn = len(subg)
         ne = len([e for e in subg.edges()])
         assert nn == ne or nn == ne + 1
-
+        if nn == 0:
+            continue
         # Find a simple path in the doubled graph
         # It must be a simple path or a simple cycle.
         path = _find_path(subg)
+        logger.debug(f"{path} $$$$$$$$$$$$$$$$$$$$$path")
 
         # Flatten then path. It may make the path self-crossing.
         path = [v % nnode for v in path]
