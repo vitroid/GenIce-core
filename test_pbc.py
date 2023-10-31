@@ -1,6 +1,6 @@
 from logging import DEBUG, INFO, basicConfig, getLogger
 
-import networkx as nx
+import genice_core.networky as nx
 
 # import py3Dmol
 from genice2.genice import GenIce
@@ -22,7 +22,13 @@ layout = raw["reppositions"]
 # repcell is the cell matrix (transposed)
 cell = raw["repcell"]
 
+fixed = nx.DiGraph([[0, 4]])
+
 # set orientations of the hydrogen bonds.
 dg = ice_graph(
-    g, vertexPositions=layout, isPeriodicBoundary=True, dipoleOptimizationCycles=100
+    g,
+    vertexPositions=layout,
+    isPeriodicBoundary=True,
+    dipoleOptimizationCycles=100,
+    fixedEdges=fixed,
 )

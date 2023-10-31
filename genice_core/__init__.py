@@ -12,6 +12,7 @@ from genice_core.dipole import optimize, vector_sum
 from typing import Union
 from logging import getLogger
 import time
+import networkx
 
 
 def ice_graph(
@@ -72,7 +73,7 @@ def ice_graph(
         )
 
     # paths to digraph
-    dg = nx.DiGraph()
+    dg = networkx.DiGraph()
     for path in paths:
         nx.add_path(dg, path)
 

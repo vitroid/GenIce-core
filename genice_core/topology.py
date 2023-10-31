@@ -21,7 +21,7 @@ def _trace_path(g: nx.Graph, path: list) -> list:
     while True:
         # look at the head of the path
         last, head = path[-2:]
-        for next in g.neighbors(head):
+        for next in g[head]:
             if next != last:
                 # go ahead
                 break
@@ -45,52 +45,44 @@ def _find_path(g: nx.Graph) -> list:
     """
     logger = getLogger()
 
-    nodes = list(g.nodes())
+    nodes = list(g)
     # logger.info(f"{[(i,j) for i,j in g.edges()]} _find_path()")
     # choose one node
     head = nodes[0]
     # look neighbors
-    nei = list(g[head])
-    if len(nei) == 0:
+    neighbors = list(g[head])
+    if len(neighbors) == 0:
         # isolated node
         return []
-    elif len(nei) == 1:
+    elif len(neighbors) == 1:
         # head is an end node, fortunately.
-        return _trace_path(g, [head, nei[0]])
+        return _trace_path(g, [head, neighbors[0]])
     # look forward
-    c0 = _trace_path(g, [head, nei[0]])
+    c0 = _trace_path(g, [head, neighbors[0]])
 
     if c0[-1] == head:
         # cyclic graph
         return c0
 
     # look backward
-    c1 = _trace_path(g, [head, nei[1]])
+    c1 = _trace_path(g, [head, neighbors[1]])
     return c0[::-1] + c1[1:]
 
 
-def _divide(divg: nx.Graph, nei: list, vertex: int, offset: int):
+def _divide(g: nx.Graph, vertex: int, offset: int):
     # fill by Nones if number of neighbors is less than 4
-    nei = (nei + [None, None, None, None])[:4]
+    neighbors = (list(g[vertex]) + [None, None, None, None])[:4]
 
     # two neighbor nodes that are passed away to the new node
-    migrants = set(np.random.choice(nei, 2, replace=False)) - set([None])
+    migrants = set(np.random.choice(neighbors, 2, replace=False)) - set([None])
 
     # new node label
     newVertex = vertex + offset
 
     # assemble edges
     for migrant in migrants:
-        divg.remove_edge(migrant, vertex)
-        divg.add_edge(newVertex, migrant)
-
-
-def _divide_node(divg: nx.Graph, vertex: int, offset: int, numFixedEdges: int):
-    nei = list(divg.neighbors(vertex))
-
-    if numFixedEdges == 0:
-        _divide(divg, nei, vertex, offset)
-    # division is not necessary in any other cases.
+        g.remove_edge(migrant, vertex)
+        g.add_edge(newVertex, migrant)
 
 
 def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -> nx.Graph:
@@ -120,10 +112,11 @@ def noodlize(g: nx.Graph, fixed: Union[nx.DiGraph, None] = nx.DiGraph()) -> nx.G
 
     for v in g:
         if fixg.has_node(v):
-            nfixed = fixg.degree[v]
+            nfixed = len(fixg[v])
         else:
             nfixed = 0
-        _divide_node(divg, v, offset, nfixed)
+        if nfixed == 0:
+            _divide(divg, v, offset)
 
     # divg is made of chains and cycles.
     # divg does not contain the edges in fixed.
@@ -189,19 +182,17 @@ def split_into_simple_paths(
 
     for c in nx.connected_components(divg):
         # a component of c is either a chain or a cycle.
-        subg = divg.subgraph(c)
-        # logger.info(f"{[(i,j) for i,j in subg.edges()]} split_into_simple_paths()")
-        nn = len(subg)
-        ne = len([e for e in subg.edges()])
-        assert nn == ne or nn == ne + 1
-        if nn == 0:
+        if len(c) == 0:
             continue
+
+        subg = divg.subgraph(c)
+        assert len(subg) > 0, c
         # Find a simple path in the doubled graph
         # It must be a simple path or a simple cycle.
         path = _find_path(subg)
         # logger.debug(f"{path} $$$$$$$$$$$$$$$$$$$$$path")
 
-        # Flatten then path. It may make the path self-crossing.
+        # Flatten the path. It may make the path self-crossing.
         path = [v % nnode for v in path]
 
         # Divide a long path into simple paths and cycles.

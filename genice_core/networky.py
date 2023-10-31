@@ -1,13 +1,16 @@
 # ノードを分割し、成分に分け、パスをさがし、という処理が無駄に遅い気がするので、自作してみる。
 
 from collections import defaultdict
+from logging import getLogger
 from typing import Dict, Iterable, MutableSequence, Union
 import networkx as nx
 
 
 class Graph(Dict):
     def __init__(self, g=None):
+        # logger = getLogger()
         self._edges = defaultdict(set)
+        # logger.info(type(g))
         if type(g) is list:
             self.add_edges(g)
         elif g is None:
@@ -17,6 +20,8 @@ class Graph(Dict):
         elif type(g) is DiGraph:
             self.add_edges(g.edges())
         elif type(g) is nx.Graph:
+            self.add_edges(g.edges())
+        elif type(g) is nx.DiGraph:
             self.add_edges(g.edges())
         else:
             assert False
@@ -44,6 +49,9 @@ class Graph(Dict):
 
     def has_node(self, x):
         return x in self._edges
+
+    def degree(self, x):
+        return len(self._edges[x])
 
     def nodes(self):
         return self._edges.keys()
