@@ -24,7 +24,7 @@ def ice_graph(
 ) -> nx.DiGraph:
     """Make a digraph that obeys the ice rules.
 
-    A new algorithm suggested by Prof. Sakuma, Yamagata University.
+    A new algorithm based on the suggestion by Prof. Sakuma, Yamagata University.
 
     Args:
         g (nx.Graph): A ice-like undirected graph.
