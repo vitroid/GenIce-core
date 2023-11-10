@@ -32,11 +32,11 @@ uninstall:
 
 deploy: build
 	twine upload dist/*
-check:
-	./setup.py check
+# check:
+# 	./setup.py check
 
 
-%: temp_% replacer.py pyproject.toml
+%: %.j2 replacer.py pyproject.toml
 	python replacer.py < $< > $@
 
 

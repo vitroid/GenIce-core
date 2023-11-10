@@ -11,7 +11,6 @@ from genice_core.topology import noodlize, split_into_simple_paths, balance
 from genice_core.dipole import optimize, vector_sum
 from typing import Union
 from logging import getLogger
-import time
 
 
 def ice_graph(
@@ -45,14 +44,10 @@ def ice_graph(
         balance(fixedEdges, g, hook=hook)
 
     # Divide the graph into noodle graph
-    now = time.time()
     dividedGraph = noodlize(g, fixedEdges)
-    logger.info(f"{time.time() - now} sec noodlize()")
 
-    now = time.time()
     # Simplify paths ( paths with least crossings )
     paths = list(split_into_simple_paths(len(g), dividedGraph))
-    logger.info(f"{time.time() - now} sec split_into_simple_paths()")
 
     # arrange the orientations here if you want to balance the polarization
     if vertexPositions is not None:
