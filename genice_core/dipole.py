@@ -70,7 +70,7 @@ def optimize(
             relativeVector -= np.floor(relativeVector + 0.5)
             # total dipole along the chain (or a cycle)
             chainPol = np.sum(relativeVector, axis=0)
-            # if it is large enough, i.e. if it is a spanning cycle,
+            # if it is large enough, i.e. if it is a spanning cycle or a chain
             if chainPol @ chainPol > 1e-6:
                 logger.debug(path)
                 dipoles.append(chainPol)

@@ -41,7 +41,7 @@ def ice_graph(
     logger.debug(fixedEdges)
 
     if fixedEdges is not None:
-        balance(fixedEdges, g, hook=hook)
+        fixedEdges = balance(fixedEdges, g, hook=hook)
 
     # Divide the graph into noodle graph
     dividedGraph = noodlize(g, fixedEdges)

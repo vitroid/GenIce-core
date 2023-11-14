@@ -205,35 +205,72 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
     Args:
         fixed (nx.DiGraph): fixed edges
         g (nx.Graph): skeletal graph
+
+    Returns:
+        nx.DiGraph: extended fixed graph
     """
-    # prepare the perimeter
+    logger = getLogger()
+
+    _fixed = nx.DiGraph(fixed)
+
+    # prepare the perimeter for the breadth first search
     perimeter = [
         node
-        for node in fixed
-        if fixed.in_degree[node] + fixed.out_degree[node] < g.degree[node]
+        for node in _fixed
+        if _fixed.in_degree[node] + _fixed.out_degree[node] < g.degree[node]
     ]
+    np.random.shuffle(perimeter)  # in-place
 
     while len(perimeter) > 0:
         node = perimeter.pop(0)
         if node < 0:
             continue
         if hook is not None:
-            hook(fixed)
+            hook(_fixed)
 
         # fill if degree is less than 4
         neighborNodes = list(g[node]) + [-1, -2, -3, -4]
         neighborNodes = neighborNodes[:4]
+        np.random.shuffle(neighborNodes)  # in-place
 
-        while fixed.in_degree(node) > fixed.out_degree(node):
-            next = np.random.choice(neighborNodes)
-            if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
-                fixed.add_edge(node, next)
-                perimeter.append(next)
+        if max(_fixed.in_degree(node), _fixed.out_degree(node)) * 2 > g.degree(node):
+            # start over
+            logger.info(f"Pathfinding has reached a dead end. Starting over ...")
 
-        while fixed.in_degree(node) < fixed.out_degree(node):
-            next = np.random.choice(neighborNodes)
-            if not (fixed.has_edge(node, next) or fixed.has_edge(next, node)):
-                fixed.add_edge(next, node)
-                perimeter.append(next)
+            # clone again
+            _fixed = nx.DiGraph(fixed)
 
-    _remove_dummy_nodes(fixed)
+            # prepare the perimeter for the breadth first search
+            perimeter = [
+                node
+                for node in _fixed
+                if _fixed.in_degree[node] + _fixed.out_degree[node] < g.degree[node]
+            ]
+            np.random.shuffle(perimeter)  # in-place
+            continue
+
+        if _fixed.in_degree(node) > _fixed.out_degree(node):
+            for next in neighborNodes:
+                if not (
+                    _fixed.has_edge(node, next)
+                    or _fixed.has_edge(next, node)
+                    or next in perimeter
+                ):
+                    _fixed.add_edge(node, next)
+                    perimeter.append(next)
+                    break
+
+        if _fixed.in_degree(node) < _fixed.out_degree(node):
+            for next in neighborNodes:
+                if not (
+                    _fixed.has_edge(node, next)
+                    or _fixed.has_edge(next, node)
+                    or next in perimeter
+                ):
+                    _fixed.add_edge(next, node)
+                    perimeter.append(next)
+                    break
+
+    _remove_dummy_nodes(_fixed)
+    logger.info(f" The number of fixed edges is {_fixed.size()} / {g.size()}")
+    return _fixed
