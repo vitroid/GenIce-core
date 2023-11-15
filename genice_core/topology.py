@@ -209,68 +209,124 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
     Returns:
         nx.DiGraph: extended fixed graph
     """
+
+    def _choose_free_edge(g: nx.Graph, dg: nx.DiGraph, node: int):
+        """Find an unfixed edge of the node.
+
+        Args:
+            g (nx.Graph): _description_
+            dg (nx.DiGraph): _description_
+            node (int): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        neis = list(g[node])
+        np.random.shuffle(neis)
+        for nei in neis:
+            if not (dg.has_edge(node, nei) or dg.has_edge(nei, node)):
+                return nei
+        return None
+
     logger = getLogger()
 
     _fixed = nx.DiGraph(fixed)
+    del fixed  # 書きまちがいを防ぐため、完成まで隠しておく。
 
-    # prepare the perimeter for the breadth first search
-    perimeter = [
-        node
-        for node in _fixed
-        if _fixed.in_degree[node] + _fixed.out_degree[node] < g.degree[node]
-    ]
-    np.random.shuffle(perimeter)  # in-place
+    # 試しにごっそり書きなおす。カチオンからの外向け水素結合をたどり、それらが何かに衝突するまで追跡する。同時に追跡する必要はないかもしれないね。前アルゴリズムと同じ方針でどんどん前に進めて、行き止まりになるまで続ける。
+    # 途中、自分と交差する場合は環として分けておく。先頭とつながる鎖の部分だけは逆転不可。クラスターの場合、ほとんどが表面で終端するだろうから、アニオンからたどるのも必要なはず。
 
-    while len(perimeter) > 0:
-        node = perimeter.pop(0)
-        if node < 0:
-            continue
-        if hook is not None:
-            hook(_fixed)
+    # これは腰をすえて書かないと書けない。大変。prior GenIceのアルゴリズムのほうが近い。
 
-        # fill if degree is less than 4
-        neighborNodes = list(g[node]) + [-1, -2, -3, -4]
-        neighborNodes = neighborNodes[:4]
-        np.random.shuffle(neighborNodes)  # in-place
+    # perimeter、というか未処理のfixの先端と末尾はいつでもとりだせるようにしておく必要がある。
 
-        if max(_fixed.in_degree(node), _fixed.out_degree(node)) * 2 > g.degree(node):
-            # start over
-            logger.info(f"Pathfinding has reached a dead end. Starting over ...")
+    in_peri = set()
+    out_peri = set()
+    for node in _fixed:
+        if _fixed.in_degree[node] + _fixed.out_degree[node] < g.degree[node]:
+            if _fixed.in_degree[node] > _fixed.out_degree[node]:
+                out_peri.add(node)
+            elif _fixed.in_degree[node] < _fixed.out_degree[node]:
+                in_peri.add(node)
 
-            # clone again
-            _fixed = nx.DiGraph(fixed)
+    fixed_edges = [edge for edge in _fixed.edges()]
+    logger.info(fixed_edges)
+    logger.info(f"out_peri {out_peri}")
+    logger.info(f"in_peri {in_peri}")
+    # 探索過程で派生する、反転可能な環
+    free_cycles = []
 
-            # prepare the perimeter for the breadth first search
-            perimeter = [
+    # gは修飾済みとする。
+
+    while len(out_peri) > 0:
+        node = np.random.choice(list(out_peri))
+        out_peri -= {node}
+        logger.debug(
+            f"first node {node}, its neighbors {g[node]} {list(_fixed.successors(node))} {list(_fixed.predecessors(node))}"
+        )
+
+        path = [node]
+        while True:
+            if node in in_peri:
+                logger.debug(f"Reach at a perimeter node at {node}. Path is {path}.")
+                in_peri -= {node}
+                break
+            if node in out_peri:
+                logger.info(f"node {node} is on the out_peri...")
+                # out_periのノードを何度も通ると、欠陥になってしまう。
+            if max(_fixed.in_degree(node), _fixed.out_degree(node)) * 2 > g.degree(
                 node
-                for node in _fixed
-                if _fixed.in_degree[node] + _fixed.out_degree[node] < g.degree[node]
-            ]
-            np.random.shuffle(perimeter)  # in-place
-            continue
+            ):
+                logger.info(f"Inbalance.")
+                return None, None
+            next = _choose_free_edge(g, _fixed, node)
+            logger.debug(next)
+            if next is None:
+                logger.debug(f"Dead end at {node}. Path is {path}.")
+                # 行きどまりとは実際にはどういう状態か。これで末端を減らせたのか?
+                break
+            else:
+                # record to the path
+                path.append(next)
+                # fix the edge
+                _fixed.add_edge(node, next)
+                # if still incoming edges are more than outgoing ones,
+                if _fixed.in_degree[node] > _fixed.out_degree[node]:
+                    out_peri.add(node)
+                # go ahead
+                node = next
+                # if it is circular
+                try:
+                    loc = path[:-1].index(node)
+                    free_cycles.append(path[loc:])
+                    logger.debug(free_cycles)
+                    path = path[: loc + 1]
+                except ValueError:
+                    pass
+        # pathは記憶しておく必要はないと思う。
+    logger.debug(f"size of g {g.number_of_edges()}")
+    logger.debug(f"size of fixed {_fixed.number_of_edges()}")
+    assert len(in_peri) == 0, f"In-peri remains. {in_peri}"
+    assert len(out_peri) == 0, f"Out-peri remains. {out_peri}"
+    logger.debug(f"Number of free cycles: {len(free_cycles)}")
+    ne = sum([len(cycle) - 1 for cycle in free_cycles])
+    logger.debug(f"Number of edges in free cycles: {ne}")
+    logger.debug("re-check perimeters")
 
-        if _fixed.in_degree(node) > _fixed.out_degree(node):
-            for next in neighborNodes:
-                if not (
-                    _fixed.has_edge(node, next)
-                    or _fixed.has_edge(next, node)
-                    or next in perimeter
-                ):
-                    _fixed.add_edge(node, next)
-                    perimeter.append(next)
-                    break
+    in_peri = set()
+    out_peri = set()
+    for node in _fixed:
+        if _fixed.in_degree[node] + _fixed.out_degree[node] < g.degree[node]:
+            if _fixed.in_degree[node] > _fixed.out_degree[node]:
+                out_peri.add(node)
+            elif _fixed.in_degree[node] < _fixed.out_degree[node]:
+                in_peri.add(node)
 
-        if _fixed.in_degree(node) < _fixed.out_degree(node):
-            for next in neighborNodes:
-                if not (
-                    _fixed.has_edge(node, next)
-                    or _fixed.has_edge(next, node)
-                    or next in perimeter
-                ):
-                    _fixed.add_edge(next, node)
-                    perimeter.append(next)
-                    break
+    assert len(in_peri) == 0, "In-peri remains."
+    assert len(out_peri) == 0, "Out-peri remains."
 
-    _remove_dummy_nodes(_fixed)
+    # assert False, free_cycles
+
+    # _remove_dummy_nodes(_fixed)
     logger.info(f" The number of fixed edges is {_fixed.size()} / {g.size()}")
-    return _fixed
+    return _fixed, free_cycles

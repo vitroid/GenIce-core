@@ -41,7 +41,11 @@ def ice_graph(
     logger.debug(fixedEdges)
 
     if fixedEdges is not None:
-        fixedEdges = balance(fixedEdges, g, hook=hook)
+        result, free_cycles = balance(fixedEdges, g, hook=hook)
+        while result is None:
+            logger.info(f"Starting over...")
+            result, free_cycles = balance(fixedEdges, g, hook=hook)
+        fixedEdges = result
 
     # Divide the graph into noodle graph
     dividedGraph = noodlize(g, fixedEdges)
