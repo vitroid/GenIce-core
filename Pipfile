@@ -12,11 +12,12 @@ scikit-learn = "*"
 build = "*"
 jinja2 = "*"
 toml = "*"
-genice2 = "*"
 pdoc3 = "*"
 ipykernel = "*"
 clustice = {git = "https://github.com/vitroid/clustice.git"}
 matplotlib = "*"
+genice-core = {path = "."}
+genice2 = {ref = "genice-core", git = "https://github.com/vitroid/GenIce.git"}
 
 [requires]
 python_version = "3.11"
