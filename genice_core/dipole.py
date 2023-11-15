@@ -30,6 +30,15 @@ def vector_sum(
     return pol
 
 
+def _dipole_moment_pbc(path, vertexPositions):
+    # vectors between adjacent vertices.
+    relativeVector = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
+    # PBC wrap
+    relativeVector -= np.floor(relativeVector + 0.5)
+    # total dipole along the chain (or a cycle)
+    return np.sum(relativeVector, axis=0)
+
+
 def optimize(
     paths: list[list],
     vertexPositions: np.ndarray,
@@ -64,12 +73,7 @@ def optimize(
     dipoles = []
     for i, path in enumerate(paths):
         if isPeriodicBoundary:
-            # vectors between adjacent vertices.
-            relativeVector = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
-            # PBC wrap
-            relativeVector -= np.floor(relativeVector + 0.5)
-            # total dipole along the chain (or a cycle)
-            chainPol = np.sum(relativeVector, axis=0)
+            chainPol = _dipole_moment_pbc(path, vertexPositions)
             # if it is large enough, i.e. if it is a spanning cycle or a chain
             if chainPol @ chainPol > 1e-6:
                 logger.debug(path)
@@ -89,6 +93,12 @@ def optimize(
     optimalPol = optimalParities @ dipoles - targetPol
     logger.debug(f"initial {optimalParities @ dipoles} target {targetPol}")
 
+    if len(dipoles) > 0 and logger.isEnabledFor(DEBUG):
+        logger.debug(f"dipoles {dipoles}")
+        order = np.argsort(np.linalg.norm(dipoles, axis=1))
+        logger.debug(order)
+        logger.debug(dipoles[order])
+
     for loop in range(dipoleOptimizationCycles):
         # random sequence of +1/-1
         parities = np.random.randint(2, size=len(dipoles)) * 2 - 1
@@ -101,7 +111,9 @@ def optimize(
             # that is the optimal
             optimalPol = pol
             optimalParities = parities
-            logger.info(f"{loop} {optimalPol} dipole")
+            logger.info(
+                f"Depol. loop {loop}: [{optimalPol[0]:.2f} {optimalPol[1]:.2f} {optimalPol[2]:.2f}]"
+            )
 
             # if well-converged,
             if optimalPol @ optimalPol < 1e-10:

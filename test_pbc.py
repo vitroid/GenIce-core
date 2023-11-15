@@ -1,6 +1,7 @@
 from logging import DEBUG, INFO, basicConfig, getLogger
 
 import networkx as nx
+import numpy as np
 
 # import py3Dmol
 from genice2.genice import GenIce
@@ -11,9 +12,11 @@ from genice_core import ice_graph
 logger = getLogger()
 basicConfig(level=INFO)
 
+np.random.seed(999)
+
 lattice = Lattice("1h")
 formatter = Format("raw", stage=(1, 2))
-raw = GenIce(lattice, signature="Ice Ih", rep=(3, 3, 3)).generate_ice(formatter)
+raw = GenIce(lattice, signature="Ice Ih", rep=(6, 6, 6)).generate_ice(formatter)
 
 # graph is the topology of the hydrogen-bond network
 g = nx.Graph(raw["graph"])
@@ -33,6 +36,6 @@ dg = ice_graph(
     g,
     vertexPositions=layout,
     isPeriodicBoundary=True,
-    dipoleOptimizationCycles=100,
+    dipoleOptimizationCycles=1000,
     fixedEdges=fixed,
 )
