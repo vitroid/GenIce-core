@@ -10,7 +10,7 @@ from genice2.plugin import Format, Lattice
 from genice_core import ice_graph
 
 logger = getLogger()
-basicConfig(level=INFO)
+basicConfig(level=DEBUG)
 
 np.random.seed(999)
 

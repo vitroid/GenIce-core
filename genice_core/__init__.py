@@ -40,35 +40,53 @@ def ice_graph(
     logger.debug(g)
     logger.debug(fixedEdges)
 
-    # 派生した環
-    free_cycles = []
+    # derived cycles in extending the fixed edges.
+    derivedCycles = []
 
-    # 指定された辺だけでなく、均衡するように拡大したグラフ。
     if fixedEdges.size() > 0:
+        # balanced fixed edges
         extendedFixedEdges = None
         while extendedFixedEdges is None:
-            extendedFixedEdges, free_cycles = balance(fixedEdges, g, hook=hook)
-
-        if logger.isEnabledFor(DEBUG):
-            n_spanning = 0
-            for cycle in free_cycles:
-                chainPol = _dipole_moment_pbc(cycle, vertexPositions)
-                if chainPol @ chainPol > 1e-6:
-                    n_spanning += 1
-            logger.debug(f"Spanning cycles: {n_spanning}")
-
+            extendedFixedEdges, derivedCycles = balance(fixedEdges, g, hook=hook)
     else:
         extendedFixedEdges = nx.DiGraph()
 
-    # 今のところ、free_cyclesは活用できていない。
-    # バランスの過程で大量の環を見付けているので、それを忘れてまたnoodlizeするのはもったいない。
-    # noodlizeから除外すればいいのだが、ちょっと書きかたがややこしくなるので悩ましい。
+    # all edges that are oriented in balance()
+    fullFixedEdges = nx.DiGraph(extendedFixedEdges)
+    for cycle in derivedCycles:
+        nx.add_path(fullFixedEdges, cycle)
+        # logger.info(cycle)
 
     # Divide the graph into noodle graph
-    dividedGraph = noodlize(g, extendedFixedEdges)
+    dividedGraph = noodlize(g, fullFixedEdges)
+
+    # この時点で、pathsを検査しておく。
+    if logger.isEnabledFor(DEBUG):
+        gg = nx.compose(dividedGraph, fullFixedEdges.to_undirected())
+        logger.debug(f"Size g {g.number_of_nodes()} {g.number_of_edges()}")
+        logger.debug(f"Size gg {gg.number_of_nodes()} {gg.number_of_edges()}")
+        assert g.number_of_edges() == gg.number_of_edges()
 
     # Simplify paths ( paths with least crossings )
-    paths = list(split_into_simple_paths(len(g), dividedGraph))
+    paths = list(split_into_simple_paths(len(g), dividedGraph)) + derivedCycles
+
+    # この時点で、pathsを検査しておく。
+    if logger.isEnabledFor(DEBUG):
+        d = set()
+        # 1. pathの辺に重複がないか
+        # 2. pathのすべての辺がgにあるか
+        for path in paths:
+            for i, j in zip(path, path[1:]):
+                assert (i, j) not in d
+                d.add((i, j))
+                assert g.has_edge(i, j)
+        # 3. pathの辺だけでgが完全に復元されるか。
+        gg = nx.DiGraph(extendedFixedEdges)
+        for path in paths:
+            nx.add_path(gg, path)
+        logger.debug(f"Size g {g.number_of_nodes()} {g.number_of_edges()}")
+        logger.debug(f"Size gg {gg.number_of_nodes()} {gg.number_of_edges()}")
+        assert g.number_of_edges() == gg.number_of_edges()
 
     # arrange the orientations here if you want to balance the polarization
     if vertexPositions is not None:

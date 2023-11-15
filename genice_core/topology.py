@@ -278,7 +278,7 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
                 logger.debug(f"node {node} is on the out_peri...")
                 # out_periのノードを何度も通ると、欠陥になってしまう。
             if max(_fixed.in_degree(node), _fixed.out_degree(node)) * 2 > 4:
-                logger.info(f"Imbalance. Starting over ...")
+                logger.info(f"Failed to balance. Starting over ...")
                 return None, None
             next = _choose_free_edge(g, _fixed, node)
             logger.debug(next)
@@ -327,7 +327,7 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
                 logger.debug(f"node {node} is on the in_peri...")
                 # out_periのノードを何度も通ると、欠陥になってしまう。
             if max(_fixed.in_degree(node), _fixed.out_degree(node)) * 2 > 4:
-                logger.info(f"Imbalance. Starting over ...")
+                logger.info(f"Failed to balance. Starting over ...")
                 return None, None
             next = _choose_free_edge(g, _fixed, node)
             logger.debug(next)
