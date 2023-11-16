@@ -106,6 +106,10 @@ def noodlize(g: nx.Graph, fixed: nx.DiGraph = nx.DiGraph()) -> nx.Graph:
     for edge in fixed.edges():
         g_noodles.remove_edge(*edge)
 
+    if logger.isEnabledFor(DEBUG):
+        for node in g_noodles:
+            assert g_noodles.degree(node) in (0, 2, 4), "An node of odd-degree."
+
     for v in g:
         if g_fix.has_node(v):
             nfixed = g_fix.degree[v]
@@ -206,7 +210,7 @@ def balance(fixed: nx.DiGraph, g: nx.Graph):
         g (nx.Graph): skeletal graph
 
     Returns:
-        nx.DiGraph: extended fixed graph
+        nx.DiGraph: extended fixed graph (derived cycles are included)
         list: a list of derived cycles.
     """
 
@@ -372,6 +376,11 @@ def balance(fixed: nx.DiGraph, g: nx.Graph):
         # 拡大したグラフが指定された固定辺をすべて含んでいることを確認。
         for edge in fixed.edges():
             assert _fixed.has_edge(*edge)
+
+    # # remove edges in derivedCycles from _fixed
+    # for cycle in derivedCycles:
+    #     for edge in zip(cycle, cycle[1:]):
+    #         _fixed.remove_edge(*edge)
 
     _remove_dummy_nodes(_fixed)
 
