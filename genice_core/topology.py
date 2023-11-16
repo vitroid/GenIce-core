@@ -198,7 +198,7 @@ def _remove_dummy_nodes(g: Union[nx.Graph, nx.DiGraph]):
             g.remove_node(i)
 
 
-def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
+def balance(fixed: nx.DiGraph, g: nx.Graph):
     """Extend the prefixed digraph to make the remaining graph balanced.
 
     Args:
@@ -207,6 +207,7 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
 
     Returns:
         nx.DiGraph: extended fixed graph
+        list: a list of derived cycles.
     """
 
     def _choose_free_edge(g: nx.Graph, dg: nx.DiGraph, node: int):
@@ -231,20 +232,15 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
 
     logger = getLogger()
 
+    # Make a copy to keep the original graph untouched
     _fixed = nx.DiGraph(fixed)
-    # del fixed  # 書きまちがいを防ぐため、完成まで隠しておく。
-
-    # 試しにごっそり書きなおす。カチオンからの外向け水素結合をたどり、それらが何かに衝突するまで追跡する。同時に追跡する必要はないかもしれないね。前アルゴリズムと同じ方針でどんどん前に進めて、行き止まりになるまで続ける。
-    # 途中、自分と交差する場合は環として分けておく。先頭とつながる鎖の部分だけは逆転不可。クラスターの場合、ほとんどが表面で終端するだろうから、アニオンからたどるのも必要なはず。
-
-    # これは腰をすえて書かないと書けない。大変。prior GenIceのアルゴリズムのほうが近い。
-
-    # perimeter、というか未処理のfixの先端と末尾はいつでもとりだせるようにしておく必要がある。
 
     in_peri = set()
     out_peri = set()
     for node in _fixed:
+        # If the node has unfixed edges,
         if _fixed.in_degree[node] + _fixed.out_degree[node] < g.degree[node]:
+            # if it is not balanced,
             if _fixed.in_degree[node] > _fixed.out_degree[node]:
                 out_peri.add(node)
             elif _fixed.in_degree[node] < _fixed.out_degree[node]:
@@ -252,56 +248,58 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
 
     logger.debug(f"out_peri {out_peri}")
     logger.debug(f"in_peri {in_peri}")
-    # 探索過程で派生する、反転可能な環
-    free_cycles = []
+
+    derivedCycles = []
 
     while len(out_peri) > 0:
         node = np.random.choice(list(out_peri))
         out_peri -= {node}
-        logger.debug(
-            f"first node {node}, its neighbors {g[node]} {list(_fixed.successors(node))} {list(_fixed.predecessors(node))}"
-        )
 
         path = [node]
         while True:
             if node < 0:
+                # Path search completed.
                 logger.debug(f"Dead end at {node}. Path is {path}.")
                 break
             if node in in_peri:
-                logger.debug(f"Reach at a perimeter node at {node}. Path is {path}.")
+                # Path search completed.
+                logger.debug(f"Reach at a perimeter node {node}. Path is {path}.")
+                # in_peri and out_peri are now pair-annihilated.
                 in_peri -= {node}
                 break
             if node in out_peri:
                 logger.debug(f"node {node} is on the out_peri...")
-                # out_periのノードを何度も通ると、欠陥になってしまう。
+            # if the node can no longer be balanced,
             if max(_fixed.in_degree(node), _fixed.out_degree(node)) * 2 > 4:
+                # Start over.
                 logger.info(f"Failed to balance. Starting over ...")
                 return None, None
+            # Find the next node. That may be a decorated one.
             next = _choose_free_edge(g, _fixed, node)
+            # fix the edge
+            _fixed.add_edge(node, next)
             # record to the path
             if next >= 0:
                 path.append(next)
-            # fix the edge
-            _fixed.add_edge(node, next)
-            # if still incoming edges are more than outgoing ones,
-            if next >= 0:
+                # if still incoming edges are more than outgoing ones,
                 if _fixed.in_degree[node] > _fixed.out_degree[node]:
+                    # It is still a perimeter.
                     out_peri.add(node)
             # go ahead
             node = next
-            # if it is circular
+
+            # if it is circular, i.e. if the last node of the path has already included in the path,
             try:
                 loc = path[:-1].index(node)
-                free_cycles.append(path[loc:])
+                # Separate the cycle from the path and store in derivedCycles.
+                derivedCycles.append(path[loc:])
+                # and shorten the path
                 path = path[: loc + 1]
             except ValueError:
                 pass
-        # pathは記憶しておく必要はないと思う。
 
-    # 表面がある場合、out_periを全部処理しても、in_periが残ることはある。
-    # とても冗長だが、とりあえずまるまる同じ処理をもう一度行う。
-    # あとでなんとかしてくれ。
-
+    # starting from in_peri
+    # Almost the same process, again.
     while len(in_peri) > 0:
         node = np.random.choice(list(in_peri))
         in_peri -= {node}
@@ -312,10 +310,13 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
         path = [node]
         while True:
             if node < 0:
+                # Path search completed.
                 logger.debug(f"Dead end at {node}. Path is {path} {in_peri}.")
                 break
             if node in out_peri:
-                logger.debug(f"Reach at a perimeter node at {node}. Path is {path}.")
+                # Path search completed.
+                logger.debug(f"Reach at a perimeter node {node}. Path is {path}.")
+                # in_peri and out_peri are now pair-annihilated.
                 out_peri -= {node}
                 break
             if node in in_peri:
@@ -343,11 +344,10 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
             # if it is circular
             try:
                 loc = path[:-1].index(node)
-                free_cycles.append(path[loc:])
+                derivedCycles.append(path[loc:])
                 path = path[: loc + 1]
             except ValueError:
                 pass
-        # pathは記憶しておく必要はないと思う。
 
     if logger.isEnabledFor(DEBUG):
         logger.debug(f"size of g {g.number_of_edges()}")
@@ -373,14 +373,12 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
         for edge in fixed.edges():
             assert _fixed.has_edge(*edge)
 
-        # assert False, free_cycles
-
     _remove_dummy_nodes(_fixed)
 
     if logger.isEnabledFor(DEBUG):
         logger.debug(f"Number of fixed edges is {_fixed.size()} / {g.size()}")
-        logger.debug(f"Number of free cycles: {len(free_cycles)}")
-        ne = sum([len(cycle) - 1 for cycle in free_cycles])
+        logger.debug(f"Number of free cycles: {len(derivedCycles)}")
+        ne = sum([len(cycle) - 1 for cycle in derivedCycles])
         logger.debug(f"Number of edges in free cycles: {ne}")
 
-    return _fixed, free_cycles
+    return _fixed, derivedCycles

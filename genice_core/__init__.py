@@ -19,7 +19,6 @@ def ice_graph(
     isPeriodicBoundary: bool = False,
     dipoleOptimizationCycles: int = 0,
     fixedEdges: nx.DiGraph = nx.DiGraph(),
-    hook=None,
 ) -> nx.DiGraph:
     """Make a digraph that obeys the ice rules.
 
@@ -45,7 +44,7 @@ def ice_graph(
         extendedFixedEdges = None
         while extendedFixedEdges is None:
             # It returns Nones when it fails to balance.
-            extendedFixedEdges, derivedCycles = balance(fixedEdges, g, hook=hook)
+            extendedFixedEdges, derivedCycles = balance(fixedEdges, g)
     else:
         extendedFixedEdges = nx.DiGraph()
 

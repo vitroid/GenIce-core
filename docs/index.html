@@ -25,7 +25,7 @@
 <p><img alt="Logo" src="https://raw.githubusercontent.com/vitroid/GenIce/develop/logo/genice-v0.png"></p>
 <h1 id="genice-core">GenIce-core</h1>
 <p>Core algorithms of GenIce2</p>
-<p>version 0.6.2</p>
+<p>version 0.8</p>
 <h2 id="requirements">Requirements</h2>
 <ul>
 <li>numpy</li>
@@ -97,9 +97,9 @@ Optimizes the orientations of directed paths to reduce the net dipole moment.
 import numpy as np
 import networkx as nx
 from genice_core.topology import noodlize, split_into_simple_paths, balance
-from genice_core.dipole import optimize, vector_sum
+from genice_core.dipole import optimize, vector_sum, _dipole_moment_pbc
 from typing import Union
-from logging import getLogger
+from logging import getLogger, DEBUG
 
 
 def ice_graph(
@@ -107,8 +107,7 @@ def ice_graph(
     vertexPositions: Union[np.ndarray, None] = None,
     isPeriodicBoundary: bool = False,
     dipoleOptimizationCycles: int = 0,
-    fixedEdges: Union[nx.DiGraph, None] = nx.DiGraph(),
-    hook=None,
+    fixedEdges: nx.DiGraph = nx.DiGraph(),
 ) -&gt; nx.DiGraph:
     &#34;&#34;&#34;Make a digraph that obeys the ice rules.
 
@@ -119,32 +118,40 @@ def ice_graph(
         vertexPositions (Union[nx.ndarray, None], optional): Positions of the vertices. Defaults to None.
         isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
         dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Defaults to 0 (no iteration).
-        fixed (Union[nx.DiGraph, None], optional): A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.
+        fixed (nx.DiGraph, optional): A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.
 
     Returns:
-        nx.DiGraph: An ice graph (fixed part is excluded).
+        nx.DiGraph: An ice graph. (CHANGED. BE CAREFUL この変更の影響をもっとも受けるのがGenIce)
     &#34;&#34;&#34;
     logger = getLogger()
 
-    logger.debug(g)
-    logger.debug(fixedEdges)
+    # derived cycles in extending the fixed edges.
+    derivedCycles = []
 
-    if fixedEdges is not None:
-        balance(fixedEdges, g, hook=hook)
+    if fixedEdges.size() &gt; 0:
+        # balance fixed edges
+        extendedFixedEdges = None
+        while extendedFixedEdges is None:
+            # It returns Nones when it fails to balance.
+            extendedFixedEdges, derivedCycles = balance(fixedEdges, g)
+    else:
+        extendedFixedEdges = nx.DiGraph()
 
-    # Divide the graph into noodle graph
-    dividedGraph = noodlize(g, fixedEdges)
+    # all edges that are oriented in balance()
+    fullFixedEdges = nx.DiGraph(extendedFixedEdges)
+    for cycle in derivedCycles:
+        nx.add_path(fullFixedEdges, cycle)
+
+    # Divide the remaining (unfixed) part of the graph into a noodle graph
+    dividedGraph = noodlize(g, fullFixedEdges)
 
     # Simplify paths ( paths with least crossings )
-    paths = list(split_into_simple_paths(len(g), dividedGraph))
+    paths = list(split_into_simple_paths(len(g), dividedGraph)) + derivedCycles
 
     # arrange the orientations here if you want to balance the polarization
     if vertexPositions is not None:
-        if fixedEdges is not None:
-            # Set the targetPol in order to cancel the polarization in fixed.
-            targetPol = -vector_sum(fixedEdges, vertexPositions, isPeriodicBoundary)
-        else:
-            targetPol = np.zeros(3)
+        # Set the targetPol in order to cancel the polarization in the fixed part.
+        targetPol = -vector_sum(extendedFixedEdges, vertexPositions, isPeriodicBoundary)
 
         paths = optimize(
             paths,
@@ -154,10 +161,25 @@ def ice_graph(
             targetPol=targetPol,
         )
 
-    # paths to digraph
-    dg = nx.DiGraph()
+    # Combine everything together
+    dg = nx.DiGraph(extendedFixedEdges)
     for path in paths:
         nx.add_path(dg, path)
+
+    # # この時点で、pathsを検査しておく。
+    # if logger.isEnabledFor(DEBUG):
+    #     gg = nx.Graph(extendedFixedEdges)
+    #     for path in paths:
+    #         nx.add_path(gg, path)
+    #     logger.debug(f&#34;Size g {g.number_of_nodes()} {g.number_of_edges()}&#34;)
+    #     logger.debug(f&#34;Size gg {gg.number_of_nodes()} {gg.number_of_edges()}&#34;)
+    #     assert g.number_of_edges() == gg.number_of_edges()
+    #     e1 = set([(min(i, j), max(i, j)) for i, j in g.edges()])
+    #     e2 = set([(min(i, j), max(i, j)) for i, j in gg.edges()])
+    #     logger.debug(
+    #         f&#34;{sorted(list(e1 - e2))} edges only in original undirected graph.&#34;
+    #     )
+    #     logger.debug(f&#34;{sorted(list(e2 - e1))} edges only in derived directed graph.&#34;)
 
     return dg</code></pre>
 </details>
@@ -181,7 +203,7 @@ def ice_graph(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="genice_core.ice_graph"><code class="name flex">
-<span>def <span class="ident">ice_graph</span></span>(<span>g: networkx.classes.graph.Graph, vertexPositions: Optional[numpy.ndarray] = None, isPeriodicBoundary: bool = False, dipoleOptimizationCycles: int = 0, fixedEdges: Optional[networkx.classes.digraph.DiGraph] = &lt;networkx.classes.digraph.DiGraph object&gt;, hook=None) ‑> networkx.classes.digraph.DiGraph</span>
+<span>def <span class="ident">ice_graph</span></span>(<span>g: networkx.classes.graph.Graph, vertexPositions: Optional[numpy.ndarray] = None, isPeriodicBoundary: bool = False, dipoleOptimizationCycles: int = 0, fixedEdges: networkx.classes.digraph.DiGraph = &lt;networkx.classes.digraph.DiGraph object&gt;) ‑> networkx.classes.digraph.DiGraph</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Make a digraph that obeys the ice rules.</p>
@@ -196,13 +218,13 @@ def ice_graph(
 <dd>If True, the positions are considered to be in the fractional coordinate system. Defaults to False.</dd>
 <dt><strong><code>dipoleOptimizationCycles</code></strong> :&ensp;<code>int</code>, optional</dt>
 <dd>Number of iterations to reduce the net dipole moment. Defaults to 0 (no iteration).</dd>
-<dt><strong><code>fixed</code></strong> :&ensp;<code>Union[nx.DiGraph, None]</code>, optional</dt>
+<dt><strong><code>fixed</code></strong> :&ensp;<code>nx.DiGraph</code>, optional</dt>
 <dd>A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>nx.DiGraph</code></dt>
-<dd>An ice graph (fixed part is excluded).</dd>
+<dd>An ice graph. (CHANGED. BE CAREFUL この変更の影響をもっとも受けるのがGenIce)</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -213,8 +235,7 @@ def ice_graph(
     vertexPositions: Union[np.ndarray, None] = None,
     isPeriodicBoundary: bool = False,
     dipoleOptimizationCycles: int = 0,
-    fixedEdges: Union[nx.DiGraph, None] = nx.DiGraph(),
-    hook=None,
+    fixedEdges: nx.DiGraph = nx.DiGraph(),
 ) -&gt; nx.DiGraph:
     &#34;&#34;&#34;Make a digraph that obeys the ice rules.
 
@@ -225,32 +246,40 @@ def ice_graph(
         vertexPositions (Union[nx.ndarray, None], optional): Positions of the vertices. Defaults to None.
         isPeriodicBoundary (bool, optional): If True, the positions are considered to be in the fractional coordinate system. Defaults to False.
         dipoleOptimizationCycles (int, optional): Number of iterations to reduce the net dipole moment. Defaults to 0 (no iteration).
-        fixed (Union[nx.DiGraph, None], optional): A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.
+        fixed (nx.DiGraph, optional): A digraph made of edges whose directions are fixed. All edges in fixed must also be included in g. Defaults to an empty graph.
 
     Returns:
-        nx.DiGraph: An ice graph (fixed part is excluded).
+        nx.DiGraph: An ice graph. (CHANGED. BE CAREFUL この変更の影響をもっとも受けるのがGenIce)
     &#34;&#34;&#34;
     logger = getLogger()
 
-    logger.debug(g)
-    logger.debug(fixedEdges)
+    # derived cycles in extending the fixed edges.
+    derivedCycles = []
 
-    if fixedEdges is not None:
-        balance(fixedEdges, g, hook=hook)
+    if fixedEdges.size() &gt; 0:
+        # balance fixed edges
+        extendedFixedEdges = None
+        while extendedFixedEdges is None:
+            # It returns Nones when it fails to balance.
+            extendedFixedEdges, derivedCycles = balance(fixedEdges, g)
+    else:
+        extendedFixedEdges = nx.DiGraph()
 
-    # Divide the graph into noodle graph
-    dividedGraph = noodlize(g, fixedEdges)
+    # all edges that are oriented in balance()
+    fullFixedEdges = nx.DiGraph(extendedFixedEdges)
+    for cycle in derivedCycles:
+        nx.add_path(fullFixedEdges, cycle)
+
+    # Divide the remaining (unfixed) part of the graph into a noodle graph
+    dividedGraph = noodlize(g, fullFixedEdges)
 
     # Simplify paths ( paths with least crossings )
-    paths = list(split_into_simple_paths(len(g), dividedGraph))
+    paths = list(split_into_simple_paths(len(g), dividedGraph)) + derivedCycles
 
     # arrange the orientations here if you want to balance the polarization
     if vertexPositions is not None:
-        if fixedEdges is not None:
-            # Set the targetPol in order to cancel the polarization in fixed.
-            targetPol = -vector_sum(fixedEdges, vertexPositions, isPeriodicBoundary)
-        else:
-            targetPol = np.zeros(3)
+        # Set the targetPol in order to cancel the polarization in the fixed part.
+        targetPol = -vector_sum(extendedFixedEdges, vertexPositions, isPeriodicBoundary)
 
         paths = optimize(
             paths,
@@ -260,10 +289,25 @@ def ice_graph(
             targetPol=targetPol,
         )
 
-    # paths to digraph
-    dg = nx.DiGraph()
+    # Combine everything together
+    dg = nx.DiGraph(extendedFixedEdges)
     for path in paths:
         nx.add_path(dg, path)
+
+    # # この時点で、pathsを検査しておく。
+    # if logger.isEnabledFor(DEBUG):
+    #     gg = nx.Graph(extendedFixedEdges)
+    #     for path in paths:
+    #         nx.add_path(gg, path)
+    #     logger.debug(f&#34;Size g {g.number_of_nodes()} {g.number_of_edges()}&#34;)
+    #     logger.debug(f&#34;Size gg {gg.number_of_nodes()} {gg.number_of_edges()}&#34;)
+    #     assert g.number_of_edges() == gg.number_of_edges()
+    #     e1 = set([(min(i, j), max(i, j)) for i, j in g.edges()])
+    #     e2 = set([(min(i, j), max(i, j)) for i, j in gg.edges()])
+    #     logger.debug(
+    #         f&#34;{sorted(list(e1 - e2))} edges only in original undirected graph.&#34;
+    #     )
+    #     logger.debug(f&#34;{sorted(list(e2 - e1))} edges only in derived directed graph.&#34;)
 
     return dg</code></pre>
 </details>

@@ -107,18 +107,14 @@ def optimize(
             # that is the optimal
             optimalPol = pol
             optimalParities = parities
-            logger.debug(
-                f"Depol. loop {loop}: [{optimalPol[0]:.2f} {optimalPol[1]:.2f} {optimalPol[2]:.2f}]"
-            )
+            logger.debug(f"Depol. loop {loop}: {optimalPol}")
 
             # if well-converged,
             if optimalPol @ optimalPol < 1e-10:
                 logger.debug("Optimized.")
                 break
 
-    logger.info(
-        f"Depol. loop {loop}: [{optimalPol[0]:.2f} {optimalPol[1]:.2f} {optimalPol[2]:.2f}]"
-    )
+    logger.info(f"Depol. loop {loop}: {optimalPol}")
 
     # invert some chains according to parity_optimal
     for i, parity in zip(polarizedEdges, optimalParities):

@@ -59,6 +59,15 @@ def vector_sum(
     return pol
 
 
+def _dipole_moment_pbc(path, vertexPositions):
+    # vectors between adjacent vertices.
+    relativeVector = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
+    # PBC wrap
+    relativeVector -= np.floor(relativeVector + 0.5)
+    # total dipole along the chain (or a cycle)
+    return np.sum(relativeVector, axis=0)
+
+
 def optimize(
     paths: list[list],
     vertexPositions: np.ndarray,
@@ -93,15 +102,9 @@ def optimize(
     dipoles = []
     for i, path in enumerate(paths):
         if isPeriodicBoundary:
-            # vectors between adjacent vertices.
-            relativeVector = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
-            # PBC wrap
-            relativeVector -= np.floor(relativeVector + 0.5)
-            # total dipole along the chain (or a cycle)
-            chainPol = np.sum(relativeVector, axis=0)
-            # if it is large enough, i.e. if it is a spanning cycle,
+            chainPol = _dipole_moment_pbc(path, vertexPositions)
+            # if it is large enough, i.e. if it is a spanning cycle or a chain
             if chainPol @ chainPol &gt; 1e-6:
-                logger.debug(path)
                 dipoles.append(chainPol)
                 polarizedEdges.append(i)
         else:
@@ -112,11 +115,14 @@ def optimize(
                 dipoles.append(chainPol)
                 polarizedEdges.append(i)
     dipoles = np.array(dipoles)
-    # logger.debug(dipoles)
 
     optimalParities = np.ones(len(dipoles))
     optimalPol = optimalParities @ dipoles - targetPol
-    logger.debug(f&#34;init {optimalPol} dipole {targetPol}&#34;)
+    logger.debug(f&#34;initial {optimalParities @ dipoles} target {targetPol}&#34;)
+
+    if len(dipoles) &gt; 0 and logger.isEnabledFor(DEBUG):
+        logger.debug(f&#34;dipoles {dipoles}&#34;)
+        order = np.argsort(np.linalg.norm(dipoles, axis=1))
 
     for loop in range(dipoleOptimizationCycles):
         # random sequence of +1/-1
@@ -130,12 +136,14 @@ def optimize(
             # that is the optimal
             optimalPol = pol
             optimalParities = parities
-            logger.info(f&#34;{loop} {optimalPol} dipole&#34;)
+            logger.debug(f&#34;Depol. loop {loop}: {optimalPol}&#34;)
 
             # if well-converged,
             if optimalPol @ optimalPol &lt; 1e-10:
                 logger.debug(&#34;Optimized.&#34;)
                 break
+
+    logger.info(f&#34;Depol. loop {loop}: {optimalPol}&#34;)
 
     # invert some chains according to parity_optimal
     for i, parity in zip(polarizedEdges, optimalParities):
@@ -214,15 +222,9 @@ def optimize(
     dipoles = []
     for i, path in enumerate(paths):
         if isPeriodicBoundary:
-            # vectors between adjacent vertices.
-            relativeVector = vertexPositions[path[1:]] - vertexPositions[path[:-1]]
-            # PBC wrap
-            relativeVector -= np.floor(relativeVector + 0.5)
-            # total dipole along the chain (or a cycle)
-            chainPol = np.sum(relativeVector, axis=0)
-            # if it is large enough, i.e. if it is a spanning cycle,
+            chainPol = _dipole_moment_pbc(path, vertexPositions)
+            # if it is large enough, i.e. if it is a spanning cycle or a chain
             if chainPol @ chainPol &gt; 1e-6:
-                logger.debug(path)
                 dipoles.append(chainPol)
                 polarizedEdges.append(i)
         else:
@@ -233,11 +235,14 @@ def optimize(
                 dipoles.append(chainPol)
                 polarizedEdges.append(i)
     dipoles = np.array(dipoles)
-    # logger.debug(dipoles)
 
     optimalParities = np.ones(len(dipoles))
     optimalPol = optimalParities @ dipoles - targetPol
-    logger.debug(f&#34;init {optimalPol} dipole {targetPol}&#34;)
+    logger.debug(f&#34;initial {optimalParities @ dipoles} target {targetPol}&#34;)
+
+    if len(dipoles) &gt; 0 and logger.isEnabledFor(DEBUG):
+        logger.debug(f&#34;dipoles {dipoles}&#34;)
+        order = np.argsort(np.linalg.norm(dipoles, axis=1))
 
     for loop in range(dipoleOptimizationCycles):
         # random sequence of +1/-1
@@ -251,12 +256,14 @@ def optimize(
             # that is the optimal
             optimalPol = pol
             optimalParities = parities
-            logger.info(f&#34;{loop} {optimalPol} dipole&#34;)
+            logger.debug(f&#34;Depol. loop {loop}: {optimalPol}&#34;)
 
             # if well-converged,
             if optimalPol @ optimalPol &lt; 1e-10:
                 logger.debug(&#34;Optimized.&#34;)
                 break
+
+    logger.info(f&#34;Depol. loop {loop}: {optimalPol}&#34;)
 
     # invert some chains according to parity_optimal
     for i, parity in zip(polarizedEdges, optimalParities):
