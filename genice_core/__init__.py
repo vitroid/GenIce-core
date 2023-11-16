@@ -37,16 +37,14 @@ def ice_graph(
     """
     logger = getLogger()
 
-    logger.debug(g)
-    logger.debug(fixedEdges)
-
     # derived cycles in extending the fixed edges.
     derivedCycles = []
 
     if fixedEdges.size() > 0:
-        # balanced fixed edges
+        # balance fixed edges
         extendedFixedEdges = None
         while extendedFixedEdges is None:
+            # It returns Nones when it fails to balance.
             extendedFixedEdges, derivedCycles = balance(fixedEdges, g, hook=hook)
     else:
         extendedFixedEdges = nx.DiGraph()
@@ -55,48 +53,17 @@ def ice_graph(
     fullFixedEdges = nx.DiGraph(extendedFixedEdges)
     for cycle in derivedCycles:
         nx.add_path(fullFixedEdges, cycle)
-        # logger.info(cycle)
 
-    # Divide the graph into noodle graph
+    # Divide the remaining (unfixed) part of the graph into a noodle graph
     dividedGraph = noodlize(g, fullFixedEdges)
-
-    # この時点で、pathsを検査しておく。
-    if logger.isEnabledFor(DEBUG):
-        gg = nx.compose(dividedGraph, fullFixedEdges.to_undirected())
-        logger.debug(f"Size g {g.number_of_nodes()} {g.number_of_edges()}")
-        logger.debug(f"Size gg {gg.number_of_nodes()} {gg.number_of_edges()}")
-        assert g.number_of_edges() == gg.number_of_edges()
 
     # Simplify paths ( paths with least crossings )
     paths = list(split_into_simple_paths(len(g), dividedGraph)) + derivedCycles
 
-    # この時点で、pathsを検査しておく。
-    if logger.isEnabledFor(DEBUG):
-        d = set()
-        # 1. pathの辺に重複がないか
-        # 2. pathのすべての辺がgにあるか
-        for path in paths:
-            for i, j in zip(path, path[1:]):
-                assert (i, j) not in d
-                d.add((i, j))
-                assert g.has_edge(i, j)
-        # 3. pathの辺だけでgが完全に復元されるか。
-        gg = nx.DiGraph(extendedFixedEdges)
-        for path in paths:
-            nx.add_path(gg, path)
-        logger.debug(f"Size g {g.number_of_nodes()} {g.number_of_edges()}")
-        logger.debug(f"Size gg {gg.number_of_nodes()} {gg.number_of_edges()}")
-        assert g.number_of_edges() == gg.number_of_edges()
-
     # arrange the orientations here if you want to balance the polarization
     if vertexPositions is not None:
-        if fixedEdges is not None:
-            # Set the targetPol in order to cancel the polarization in fixed.
-            targetPol = -vector_sum(
-                extendedFixedEdges, vertexPositions, isPeriodicBoundary
-            )
-        else:
-            targetPol = np.zeros(3)
+        # Set the targetPol in order to cancel the polarization in the fixed part.
+        targetPol = -vector_sum(extendedFixedEdges, vertexPositions, isPeriodicBoundary)
 
         paths = optimize(
             paths,
@@ -106,10 +73,24 @@ def ice_graph(
             targetPol=targetPol,
         )
 
-    # paths to digraph
-
+    # Combine everything together
     dg = nx.DiGraph(extendedFixedEdges)
     for path in paths:
         nx.add_path(dg, path)
+
+    # # この時点で、pathsを検査しておく。
+    # if logger.isEnabledFor(DEBUG):
+    #     gg = nx.Graph(extendedFixedEdges)
+    #     for path in paths:
+    #         nx.add_path(gg, path)
+    #     logger.debug(f"Size g {g.number_of_nodes()} {g.number_of_edges()}")
+    #     logger.debug(f"Size gg {gg.number_of_nodes()} {gg.number_of_edges()}")
+    #     assert g.number_of_edges() == gg.number_of_edges()
+    #     e1 = set([(min(i, j), max(i, j)) for i, j in g.edges()])
+    #     e2 = set([(min(i, j), max(i, j)) for i, j in gg.edges()])
+    #     logger.debug(
+    #         f"{sorted(list(e1 - e2))} edges only in original undirected graph."
+    #     )
+    #     logger.debug(f"{sorted(list(e2 - e1))} edges only in derived directed graph.")
 
     return dg

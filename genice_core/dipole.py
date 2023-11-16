@@ -76,7 +76,6 @@ def optimize(
             chainPol = _dipole_moment_pbc(path, vertexPositions)
             # if it is large enough, i.e. if it is a spanning cycle or a chain
             if chainPol @ chainPol > 1e-6:
-                logger.debug(path)
                 dipoles.append(chainPol)
                 polarizedEdges.append(i)
         else:
@@ -87,7 +86,6 @@ def optimize(
                 dipoles.append(chainPol)
                 polarizedEdges.append(i)
     dipoles = np.array(dipoles)
-    # logger.debug(dipoles)
 
     optimalParities = np.ones(len(dipoles))
     optimalPol = optimalParities @ dipoles - targetPol
@@ -96,8 +94,6 @@ def optimize(
     if len(dipoles) > 0 and logger.isEnabledFor(DEBUG):
         logger.debug(f"dipoles {dipoles}")
         order = np.argsort(np.linalg.norm(dipoles, axis=1))
-        logger.debug(order)
-        logger.debug(dipoles[order])
 
     for loop in range(dipoleOptimizationCycles):
         # random sequence of +1/-1

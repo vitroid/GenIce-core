@@ -155,7 +155,6 @@ def _decompose_complex_path(path: list):
         order[node] = len(order)
         store.append(node)
         headp += 1
-        logger.debug([order, store])
     if len(store) > 1:
         yield store
     logger.debug(f"Done decomposition.")
@@ -251,8 +250,6 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
             elif _fixed.in_degree[node] < _fixed.out_degree[node]:
                 in_peri.add(node)
 
-    fixed_edges = [edge for edge in _fixed.edges()]
-    logger.debug(fixed_edges)
     logger.debug(f"out_peri {out_peri}")
     logger.debug(f"in_peri {in_peri}")
     # 探索過程で派生する、反転可能な環
@@ -281,7 +278,6 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
                 logger.info(f"Failed to balance. Starting over ...")
                 return None, None
             next = _choose_free_edge(g, _fixed, node)
-            logger.debug(next)
             # record to the path
             if next >= 0:
                 path.append(next)
@@ -297,7 +293,6 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
             try:
                 loc = path[:-1].index(node)
                 free_cycles.append(path[loc:])
-                logger.debug(free_cycles)
                 path = path[: loc + 1]
             except ValueError:
                 pass
@@ -330,7 +325,6 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
                 logger.info(f"Failed to balance. Starting over ...")
                 return None, None
             next = _choose_free_edge(g, _fixed, node)
-            logger.debug(next)
             # record to the path
             if next >= 0:
                 path.append(next)
@@ -350,7 +344,6 @@ def balance(fixed: nx.DiGraph, g: nx.Graph, hook=None):
             try:
                 loc = path[:-1].index(node)
                 free_cycles.append(path[loc:])
-                logger.debug(free_cycles)
                 path = path[: loc + 1]
             except ValueError:
                 pass
