@@ -7,7 +7,7 @@ Core algorithms of GenIce2
 version 0.8
 
 
-NOTE: The development has been moved to https://github.com/genice-dev/GenIce-core
+NOTE: The development has been moved to https://github.com/genice-dev/genice-core
 
 ## Requirements
 
